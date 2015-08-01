@@ -1,6 +1,6 @@
 /**
  * MemoryJane v1.0
- * Created by David Williams and Aaron Williams
+ * Written by David Williams
  */
  
 function AlexaSkill(appId) {
