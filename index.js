@@ -1,6 +1,6 @@
 /**
  * MemoryJane v1.0
- * Created by David Williams and Aaron Williams
+ * Written by David Williams
  */
 
 /**
@@ -14,41 +14,39 @@ var APP_ID = undefined; //replace with "amzn1.echo-sdk-ams.app.[your-unique-valu
 var AlexaSkill = require('./AlexaSkill');
 
 /**
- * HelloWorld is a child of AlexaSkill.
- * To read more about inheritance in JavaScript, see the link below.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript#Inheritance
+ * MemoryJane is a child of AlexaSkill.
  */
-var HelloWorld = function () {
+var MemoryJane = function () {
     AlexaSkill.call(this, APP_ID);
 };
 
 // Extend AlexaSkill
-HelloWorld.prototype = Object.create(AlexaSkill.prototype);
-HelloWorld.prototype.constructor = HelloWorld;
+MemoryJane.prototype = Object.create(AlexaSkill.prototype);
+MemoryJane.prototype.constructor = MemoryJane;
 
-HelloWorld.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
-    console.log("HelloWorld onSessionStarted requestId: " + sessionStartedRequest.requestId
+MemoryJane.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
+    console.log("MemoryJane onSessionStarted requestId: " + sessionStartedRequest.requestId
         + ", sessionId: " + session.sessionId);
     // any initialization logic goes here
 };
 
-HelloWorld.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-    console.log("HelloWorld onLaunch requestId: " + launchRequest.requestId + ", sessionId: " + session.sessionId);
-    var speechOutput = "Welcome, ask me to say hello";
+MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
+    console.log("MemoryJane onLaunch requestId: " + launchRequest.requestId
+        + ", sessionId: " + session.sessionId);
+    var speechOutput = "Spell memory";
     response.ask(speechOutput);
 };
 
-HelloWorld.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
-    console.log("HelloWorld onSessionEnded requestId: " + sessionEndedRequest.requestId
+MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
+    console.log("MemoryJane onSessionEnded requestId: " + sessionEndedRequest.requestId
         + ", sessionId: " + session.sessionId);
     // any cleanup logic goes here
 };
 
 // Create the handler that responds to the Alexa Request.
 exports.handler = function (event, context) {
-    // Create an instance of the HelloWorld skill.
-    var helloWorld = new HelloWorld();
-    helloWorld.execute(event, context);
+    // Create an instance of the MemoryJane skill.
+    var memoryJane = new MemoryJane();
+    memoryJane.execute(event, context);
 };
 
