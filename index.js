@@ -44,7 +44,7 @@ MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedReques
 };
 
 MemoryJane.prototype.intentHandlers = {
-    // One even handler for each letter.
+    // One event handler for all of the letters.
     MemoryJaneWordIntent: function (intent, session, response) {
         if (intent.slots.RestOfWord.value == "m. e. m. o. r. y.") {
             response.tell("Yee-haw! You got it right! You Said " + intent.slots.RestOfWord.value);
