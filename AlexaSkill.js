@@ -49,7 +49,7 @@ AlexaSkill.prototype.eventHandlers = {
             intentName = intentRequest.intent.name,
             intentHandler = this.intentHandlers[intentName];
         if (intentHandler) {
-            console.log('dispatch intent = ' + intentName);
+            console.log('dispatch intent = ' + intentName + ',  value = ' + intent.slots.RestOfWord.value);
             intentHandler.call(this, intent, session, response);
         } else {
             throw 'Unsupported intent = ' + intentName;
