@@ -82,7 +82,11 @@ MemoryJane.prototype.intentHandlers = {
         response.tell("You Said L. " + intent.slots.RestOfWord.value);
     },
     MemoryJaneMIntent: function (intent, session, response) {
-        response.tell("You Said M. " + intent.slots.RestOfWord.value);
+        if (intent.slots.RestOfWord.value == "E. M. O. R. Y.") {
+            response.tell("Yee-haw! You got it right! You Said M. " + intent.slots.RestOfWord.value);
+        } else {
+            response.tell("You Said M. " + intent.slots.RestOfWord.value);
+        }
     },
     MemoryJaneNIntent: function (intent, session, response) {
         response.tell("You Said N. " + intent.slots.RestOfWord.value);
