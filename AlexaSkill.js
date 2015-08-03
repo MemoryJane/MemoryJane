@@ -62,7 +62,7 @@ AlexaSkill.prototype.eventHandlers = {
             intentName = intentRequest.intent.name,
             intentHandler = this.intentHandlers[intentName];
         if (intentHandler) {
-            console.log('AlexaSkill dispatch intent = ' + intentName);
+            console.log('AlexaSkill _dispatch_ intent = ' + intentName);
             intentHandler.call(this, intent, session, response);
         } else {
             throw 'AlexaSkill Unsupported intent = ' + intentName;
@@ -112,9 +112,10 @@ AlexaSkill.prototype.execute = function (event, context) {
 
         // Route the request to the proper handler.
         var requestHandler = this.requestHandlers[event.request.type];
-        requestHandler.call(this, event, context, new Response(context, event.session));
-    } catch (e) {
-        console.log("AlexaSkill _execute_ unexpected exception " + e);
+        var response = new Response(context, event.session);
+        requestHandler.call(this, event, context, response);
+    } catch (exception) {
+        console.log("AlexaSkill _execute_ unexpected exception " + exception.stack);
     }
 };
 
