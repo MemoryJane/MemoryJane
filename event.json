@@ -1,0 +1,28 @@
+
+{
+  "version": "1.0",
+  "session": {
+    "new": true,
+    "sessionId": "ID1",
+    "application": {
+      "applicationId": "MemoryJane"
+    }
+    },
+    "user": {
+      "userId": "Aaron"
+    },
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "MemoryJaneWordIntent",
+    "timestamp": "2015-05-13T12:34:56Z",
+    "intent": {
+      "name": "MemoryJaneWordIntent",
+      "slots": {
+        "RestOfWord": {
+          "name": "RestOfWord",
+          "value": "m. e. m. o. r. y."
+        }
+      }
+    }
+  }
+}

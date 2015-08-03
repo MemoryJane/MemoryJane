@@ -4,7 +4,7 @@
  */
 
 /**
- * App ID for the skill
+ * App ID for this skill - used in the AlexaSkill code to ensure all calls are from our app.
  */
 var APP_ID = undefined; //replace with "amzn1.echo-sdk-ams.app.[your-unique-value-here]";
 
@@ -50,6 +50,7 @@ MemoryJane.prototype.intentHandlers = {
     // One event handler for all of the letters.
     MemoryJaneWordIntent: function (intent, session, response) {
         if (intent.slots.RestOfWord.value == "m. e. m. o. r. y.") {
+            console.log("Made it into the intent handler, and the word is ... " + intent.slots.RestOfWord.value)
             response.tell("Yee-haw! You got it right! You Said " + intent.slots.RestOfWord.value);
         } else {
             response.tell("You Said " + intent.slots.RestOfWord.value);
@@ -57,20 +58,28 @@ MemoryJane.prototype.intentHandlers = {
     }
 };
 
-// Create the handler that responds to the Alexa Request.
+/**
+ * This is what gets called by Lambda with each Alexa interaction.
+ *
+ * @param event
+ * @param context
+ */
 exports.handler = function (event, context) {
-    // Create an instance of the MemoryJane skill.
+    // Create an instance of the MemoryJane skill and execute it.
+    console.log("MemoryJane _handler_ creating MemoryJane object");
     var memoryJane = new MemoryJane();
     memoryJane.execute(event, context);
+    console.log("MemoryJane _handler_ done");
 };
 
-getWord = function () {
+function getWord () {
 
     //Determind the number of words in the database
     var AWS = require('aws-sdk');
     AWS.config.update({
-        accessKeyId: 'AKIAJNBRN323HMN7SCJA
-        ', secretAccessKey:  'NrZ31W + aoWWroyoIey / mzO0tabSkROoB / JCkINt9',region: 'us - east - 1'});
+        accessKeyId: 'AKIAJNBRN323HMN7SCJA',
+        secretAccessKey:  'NrZ31W + aoWWroyoIey / mzO0tabSkROoB / JCkINt9',
+        region: 'us - east - 1'});
         var svc = new AWS.DynamoDB();
     svc.client.describeTable({TableName: "MemoryJaneWords"}, function (err, result) {
         if (!err) {
@@ -95,8 +104,7 @@ getWord = function () {
                 S: rand
             }
         }
-    },
-};
+    });
 }
 
 

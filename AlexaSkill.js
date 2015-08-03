@@ -1,12 +1,25 @@
 /**
  * MemoryJane v1.0
  * Written by David Williams
+ * Based on samples from Amazon's Alexa Skills Kit:
+ * https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/using-the-alexa-skills-kit-samples-java
  */
  
+/**
+ * Initialize AlexaSkill with an appId. This will be checked later to confirm that our app is doing the calling.
+ *
+ * @param appId
+ * @constructor
+ */
 function AlexaSkill(appId) {
+    // appId is private, no reason for anyone else to use it.
     this._appId = appId;
 }
 
+/**
+ * Define the request handlers - there are only three possibilities.
+ * This is done on the prototype and should not need to be overridden.
+ */
 AlexaSkill.prototype.requestHandlers = {
     LaunchRequest: function (event, context, response) {
         this.eventHandlers.onLaunch.call(this, event.request, event.session, response);
@@ -23,7 +36,7 @@ AlexaSkill.prototype.requestHandlers = {
 };
 
 /**
- * Override any of the eventHandlers as needed
+ * These are the prototype event handlers. They should be overridden by the specific skill.
  */
 AlexaSkill.prototype.eventHandlers = {
     /**
@@ -49,10 +62,10 @@ AlexaSkill.prototype.eventHandlers = {
             intentName = intentRequest.intent.name,
             intentHandler = this.intentHandlers[intentName];
         if (intentHandler) {
-            console.log('dispatch intent = ' + intentName + ',  value = ' + intent.slots.RestOfWord.value);
+            console.log('AlexaSkill dispatch intent = ' + intentName);
             intentHandler.call(this, intent, session, response);
         } else {
-            throw 'Unsupported intent = ' + intentName;
+            throw 'AlexaSkill Unsupported intent = ' + intentName;
         }
     },
 
@@ -69,41 +82,59 @@ AlexaSkill.prototype.eventHandlers = {
  */
 AlexaSkill.prototype.intentHandlers = {};
 
+/**
+ * Execute is the first function called.
+ *
+ * @param event
+ * @param context
+ */
 AlexaSkill.prototype.execute = function (event, context) {
     try {
-        console.log("session applicationId: " + event.session.application.applicationId
-        + " EventType: " + event.request.type
-        + " EventText: " + event.text);
+        console.log("AlexaSkill _execute_ session applicationId: " + event.session.application.applicationId);
 
         // Validate that this request originated from authorized source.
         if (this._appId && event.session.application.applicationId !== this._appId) {
-            console.log("The applicationIds don't match : " + event.session.application.applicationId + " and "
+            console.log("AlexaSkill _error_ the applicationIds don't match : "
+                + event.session.application.applicationId + " and "
                 + this._appId);
-            throw "Invalid applicationId";
+            context.fail();
         }
 
+        // Not sure what having undefined sessions attributes does ..
         if (!event.session.attributes) {
             event.session.attributes = {};
         }
 
+        // If the session is new, initialize it.
         if (event.session.new) {
             this.eventHandlers.onSessionStarted(event.request, event.session);
         }
 
-        // Route the request to the proper handler which may have been overriden.
+        // Route the request to the proper handler.
         var requestHandler = this.requestHandlers[event.request.type];
         requestHandler.call(this, event, context, new Response(context, event.session));
     } catch (e) {
-        console.log("Unexpected exception " + e);
-        context.fail(e);
+        console.log("AlexaSkill _execute_ unexpected exception " + e);
     }
 };
 
+/**
+ * Response is the structure for how Alexa responds to the intent.
+ *
+ * @param context
+ * @param session
+ * @constructor
+ */
 var Response = function (context, session) {
     this._context = context;
     this._session = session;
 };
 
+/**
+ * Four helper functions to make it easy to construct a response for Alexa.
+ *
+ * @type {{tell, tellWithCard, ask, askWithCard}}
+ */
 Response.prototype = (function () {
     var buildSpeechletResponse = function (options) {
         var alexaResponse = {
@@ -176,4 +207,6 @@ Response.prototype = (function () {
     };
 })();
 
+// Export AlexaSkill so that it can be used when this src is required.
+// Use: var AlexaSkill = require('./AlexaSkill');
 module.exports = AlexaSkill;
