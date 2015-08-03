@@ -33,7 +33,10 @@ MemoryJane.prototype.eventHandlers.onSessionStarted = function (sessionStartedRe
 MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
     console.log("MemoryJane onLaunch requestId: " + launchRequest.requestId
         + ", sessionId: " + session.sessionId);
-    var speechOutput = "Spell memory";
+
+    //Get a random word from the database and prompt the user to spell it
+    var word = getWord();
+    var speechOutput = "Spell " + word;
     response.ask(speechOutput);
 };
 
@@ -60,4 +63,40 @@ exports.handler = function (event, context) {
     var memoryJane = new MemoryJane();
     memoryJane.execute(event, context);
 };
+
+getWord = function () {
+
+    //Determind the number of words in the database
+    var AWS = require('aws-sdk');
+    AWS.config.update({
+        accessKeyId: 'AKIAJNBRN323HMN7SCJA
+        ', secretAccessKey:  'NrZ31W + aoWWroyoIey / mzO0tabSkROoB / JCkINt9',region: 'us - east - 1'});
+        var svc = new AWS.DynamoDB();
+    svc.client.describeTable({TableName: "MemoryJaneWords"}, function (err, result) {
+        if (!err) {
+            var itemsInDatabase = result.Table.ItemCount;
+            //console.log('result is '+result[ItemCount]);
+            //console.log('success');
+        }
+        else {
+
+            console.log("err is " + err);
+        }
+    });
+
+    //Declare a random number between 0 and 1-itemsInDatabase
+    var rand = Math.floor(Math.random() * itemsInDatabase);
+
+    //Return the word at the index corresponding to the random value
+    return dynamodb.getItem({
+        TableName: 'MemoryJaneWords',
+        Key: {
+            Word: {
+                S: rand
+            }
+        }
+    },
+};
+}
+
 
