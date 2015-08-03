@@ -74,7 +74,7 @@ exports.handler = function (event, context) {
 
 function getWord () {
 
-    //Determind the number of words in the database
+    //Determine the number of words in the database
     var AWS = require('aws-sdk');
     AWS.config.update({
         accessKeyId: 'AKIAJNBRN323HMN7SCJA',
