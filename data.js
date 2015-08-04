@@ -16,6 +16,7 @@ var data = (function () {
         if (dynamodb.config.credentials == null) {
             dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
             dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
+            console.log("DATA _getDynamoDB_ USING LOCAL DB");
         }
         return dynamodb;
     }
@@ -163,6 +164,31 @@ var data = (function () {
                 }
             });
 
+        },
+
+        /**
+         * Put the result of a session into the DB of results, for review and analysis later.
+         * @param givenWord
+         * @param userWord
+         * @param correct
+         * @param sessionID
+         */
+        putResult: function (givenWord, userWord, correct, sessionID) {
+            var dynamodb = getDynamoDB();
+            var resultParams = { TableName: 'MemoryJaneResults',
+                Item: {
+                    Timestamp: { "N": Date.now().toString() },
+                    WordGiven: { "S": givenWord },
+                    UserResponse: { "S": userWord },
+                    Correct: { "BOOL": correct },
+                    SessionID: { "S": sessionID }
+                }
+            };
+
+            dynamodb.putItem(resultParams, function(err, data) {
+                if (err) console.log(err); // an error occurred
+                else console.log(data); // successful response
+            });
         }
     };
 }) ();

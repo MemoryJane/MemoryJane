@@ -59,15 +59,18 @@ MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedReques
 MemoryJane.prototype.intentHandlers = {
     // One event handler for all of the letters.
     MemoryJaneWordIntent: function (intent, session, response) {
+        var data = require("./data.js");
         var userWord = intent.slots.RestOfWord.value.replace(/ /g, "").replace(/\./g,"");
         var sessionWord = session.attributes.word;
 
         // HACK: if running locally, there won't be a sessionWord, so hack one in.
         if (sessionWord == undefined) { sessionWord = "banana" }
 
+        // Add the try to the database of results for later analysis.
+        data.putResult(sessionWord, userWord, sessionWord == userWord, session.sessionId);
+
         console.log("MemoryJane _wordIntent_ sessionWord: " + sessionWord+ " userSpelling: " + userWord);
 
-        var data = require("./data.js");
         if (userWord == sessionWord) {
             data.getRandomWord(function (word) {
                 // Add the word to the session.
