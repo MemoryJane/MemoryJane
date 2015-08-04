@@ -30,13 +30,13 @@ var data = (function () {
         getRandomSpellPrompt: function (callback) {
             var dynamodb = getDynamoDB();
 
-            // Describe the table to get the word count, returns async.
-            var describeParams = { TableName: "MemoryJaneWordPrompts" };
-            dynamodb.describeTable(describeParams, function (err, data) {
+            // Get the number of prompts by doing a COUNT scan.
+            var countParams = { TableName: "MemoryJaneWordPrompts", Select: 'COUNT' };
+            dynamodb.scan(countParams, function (err, data) {
                 if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
                 else {
                     // Pick a random word from the table.
-                    var number = data.Table.ItemCount;
+                    var number = data.Count;
                     var rand = (Math.floor(Math.random() * number)) + 1;
                     var getWordParams = { TableName: "MemoryJaneWordPrompts", Key: { Index: {"N": rand.toString()} } };
 
