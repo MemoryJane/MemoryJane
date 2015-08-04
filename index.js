@@ -35,9 +35,29 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
         + ", sessionId: " + session.sessionId);
 
     //Get a random word from the database and prompt the user to spell it
-    var word = getWord();
-    var speechOutput = "Spell " + word;
-    response.ask(speechOutput);
+    //var word = getWord();
+
+    var AWS = require('aws-sdk'),
+        dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
+
+    var params = {
+        TableName: "MemoryJaneWords",
+        Key: {
+            Index: {
+                "N": "2"
+            }
+        }
+    };
+
+    dynamodb.getItem(params, function(err, data) {
+        if (err) console.log("  ERR  "+err); // an error occurred
+        else {
+            console.log("  DATA " + data);
+            var word = JSON.stringify(data);
+            var speechOutput = "Spell " + word;
+            response.ask(speechOutput);
+        }
+    });
 };
 
 MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
@@ -72,8 +92,41 @@ exports.handler = function (event, context) {
     console.log("MemoryJane _handler_ done");
 };
 
-function getWord () {
 
+
+
+
+
+
+
+
+
+
+
+
+function getWord () {
+    console.log("        GET WORD  ");
+
+    var AWS = require('aws-sdk'),
+        dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
+
+    var params = {
+        TableName: 'MemoryJaneWords',
+        Key: { // required - a map of attribute name to AttributeValue for all primary key attributes
+            Index: '1', // (string | number | boolean | null | Uint8Array)
+        },
+
+    };
+
+    dynamodb.getItem(params, function(err, data) {
+        if (err) console.log("  ERR  "+err); // an error occurred
+        else console.log("  DATA " + data); // successful response
+    });
+
+    return "memory";
+
+
+    /**
     //Determine the number of words in the database
     var AWS = require('aws-sdk');
     AWS.config.update({
@@ -105,6 +158,7 @@ function getWord () {
             }
         }
     });
+     */
 }
 
 

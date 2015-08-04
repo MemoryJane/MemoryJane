@@ -3,7 +3,7 @@
   "version": "1.0",
   "session": {
     "new": true,
-    "sessionId": "ID1",
+    "sessionId": "ID2",
     "application": {
       "applicationId": "MemoryJane"
     }
@@ -12,7 +12,7 @@
       "userId": "Aaron"
     },
   "request": {
-    "type": "IntentRequest",
+    "type": "LaunchRequest",
     "requestId": "MemoryJaneWordIntent",
     "timestamp": "2015-05-13T12:34:56Z",
     "intent": {
