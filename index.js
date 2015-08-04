@@ -35,26 +35,24 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
         + ", sessionId: " + session.sessionId);
 
     //Get a random word from the database and prompt the user to spell it
-    //var word = getWord();
-
     var AWS = require('aws-sdk');
-    //var dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
-    //dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
-
-    var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+    var dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
+    dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
+    //var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 
     var describeParams = {
         TableName: "MemoryJaneWords"
     };
 
+    // Describe the table to get the word count, returns async.
     dynamodb.describeTable(describeParams, function (err, data) {
-        if (err) console.log("MemoryJane _describingTable_  " + err); // an error occurred
+        if (err) console.log("MemoryJane _describingTable_  ERROR " + err); // an error occurred
         else {
             console.log("MemoryJane _describingTable_ " + data);
 
+            // Pick a random word from the table.
             var number = data.Table.ItemCount;
             var rand = (Math.floor(Math.random() * number)) + 1;
-
             var params = {
                 TableName: "MemoryJaneWords",
                 Key: {
@@ -62,12 +60,17 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
                 }
             };
 
+            // Get the random word from the table, returns async.
             dynamodb.getItem(params, function (itemError, itemData) {
-                if (itemError) console.log("MemoryJane _gettingWord_  " + itemError); // an error occurred
+                if (itemError) console.log("MemoryJane _gettingWord_  ERROR " + itemError); // an error occurred
                 else {
                     var word = itemData.Item.Word.S;
                     console.log("MemoryJane _gettingWord_ " + word);
 
+                    // Add the word to the session, so that we can test the user's response against it.
+                    session.attributes.word = word;
+
+                    // Tell Alexa to tell the user to spell the word.
                     var speechOutput = "Spell " + word;
                     response.ask(speechOutput);
                 }
@@ -85,8 +88,11 @@ MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedReques
 MemoryJane.prototype.intentHandlers = {
     // One event handler for all of the letters.
     MemoryJaneWordIntent: function (intent, session, response) {
-        if (intent.slots.RestOfWord.value == "m. e. m. o. r. y.") {
-            console.log("Made it into the intent handler, and the word is ... " + intent.slots.RestOfWord.value)
+        console.log("MemoryJane _wordIntent_ sessionWord: " + session.attributes.word + " userSpelling: "
+            + intent.slots.RestOfWord.value);
+
+        var userWord = intent.slots.RestOfWord.value.replace(".", "").replace(" ","");
+        if (userWord == session.attributes.word) {
             response.tell("Yee-haw! You got it right! You Said " + intent.slots.RestOfWord.value);
         } else {
             response.tell("You Said " + intent.slots.RestOfWord.value);
@@ -107,74 +113,3 @@ exports.handler = function (event, context) {
     memoryJane.execute(event, context);
     console.log("MemoryJane _handler_ done");
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-function getWord () {
-    console.log("        GET WORD  ");
-
-    var AWS = require('aws-sdk'),
-        dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
-
-    var params = {
-        TableName: 'MemoryJaneWords',
-        Key: { // required - a map of attribute name to AttributeValue for all primary key attributes
-            Index: '1', // (string | number | boolean | null | Uint8Array)
-        },
-
-    };
-
-    dynamodb.getItem(params, function(err, data) {
-        if (err) console.log("  ERR  "+err); // an error occurred
-        else console.log("  DATA " + data); // successful response
-    });
-
-    return "memory";
-
-
-    /**
-    //Determine the number of words in the database
-    var AWS = require('aws-sdk');
-    AWS.config.update({
-        accessKeyId: 'AKIAJNBRN323HMN7SCJA',
-        secretAccessKey:  'NrZ31W + aoWWroyoIey / mzO0tabSkROoB / JCkINt9',
-        region: 'us - east - 1'});
-        var svc = new AWS.DynamoDB();
-    svc.client.describeTable({TableName: "MemoryJaneWords"}, function (err, result) {
-        if (!err) {
-            var itemsInDatabase = result.Table.ItemCount;
-            //console.log('result is '+result[ItemCount]);
-            //console.log('success');
-        }
-        else {
-
-            console.log("err is " + err);
-        }
-    });
-
-    //Declare a random number between 0 and 1-itemsInDatabase
-    var rand = Math.floor(Math.random() * itemsInDatabase);
-
-    //Return the word at the index corresponding to the random value
-    return dynamodb.getItem({
-        TableName: 'MemoryJaneWords',
-        Key: {
-            Word: {
-                S: rand
-            }
-        }
-    });
-     */
-}
-
-

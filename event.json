@@ -12,7 +12,7 @@
       "userId": "Aaron"
     },
   "request": {
-    "type": "LaunchRequest",
+    "type": "IntentRequest",
     "requestId": "MemoryJaneWordIntent",
     "timestamp": "2015-05-13T12:34:56Z",
     "intent": {
