@@ -29,17 +29,16 @@ var data = (function () {
          */
         getRandomSpellPrompt: function (callback) {
             var dynamodb = getDynamoDB();
-            console.log("Start get random spelling prompt");
 
             // Get the number of prompts by doing a COUNT scan.
-            var countParams = {TableName: "MemoryJaneWordPrompts", Select: 'COUNT'};
+            var countParams = { TableName: "MemoryJaneWordPrompts", Select: 'COUNT' };
             dynamodb.scan(countParams, function (err, data) {
                 if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
                 else {
                     // Pick a random word from the table.
                     var number = data.Count;
                     var rand = (Math.floor(Math.random() * number)) + 1;
-                    var getWordParams = {TableName: "MemoryJaneWordPrompts", Key: {Index: {"N": rand.toString()}}};
+                    var getWordParams = { TableName: "MemoryJaneWordPrompts", Key: { Index: {"N": rand.toString()} } };
 
                     console.log("Data _describingTable_ itemCount: " + number);
 
@@ -64,17 +63,16 @@ var data = (function () {
          */
         getRandomWord: function (callback) {
             var dynamodb = getDynamoDB();
-            console.log("Start get random word");
 
             // Get the number of prompts by doing a COUNT scan.
-            var countParams = {TableName: "MemoryJaneWords", Select: 'COUNT'};
+            var countParams = { TableName: "MemoryJaneWords", Select: 'COUNT' };
             dynamodb.scan(countParams, function (err, data) {
                 if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
                 else {
                     // Pick a random word from the table.
                     var number = data.Count;
                     var rand = (Math.floor(Math.random() * number)) + 1;
-                    var getWordParams = {TableName: "MemoryJaneWords", Key: {Index: {"N": rand.toString()}}};
+                    var getWordParams = { TableName: "MemoryJaneWords", Key: { Index: {"N": rand.toString()} } };
 
                     console.log("Data _describingTable_ itemCount: " + number);
 
@@ -91,76 +89,8 @@ var data = (function () {
                 }
             });
 
-        },
-
-        /**
-         * Get a random correct reply from the DB. Call the callback function when it has been retrieved.
-         * @param callback
-         */
-        getRandomCorrectReply: function (callback) {
-            var dynamodb = getDynamoDB();
-            console.log("Start get random correct reply");
-
-            // Get the number of prompts by doing a COUNT scan.
-            var countParams = {TableName: "MemoryJaneCorrectReplies", Select: 'COUNT'};
-            dynamodb.scan(countParams, function (err, data) {
-                if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
-                else {
-                    // Pick a random correct reply from the table.
-                    var number = data.Count;
-                    var rand = (Math.floor(Math.random() * number)) + 1;
-                    var getWordParams = {TableName: "MemoryJaneCorrectReplies", Key: {Index: {"N": rand.toString()}}};
-
-                    console.log("Data _describingTable_ itemCount: " + number);
-
-                    // Get the random correct reply from the table, returns async.
-                    dynamodb.getItem(getWordParams, function (itemError, itemData) {
-                        if (itemError) console.log("Data _gettingCorrectReply_  ERROR " + itemError); // an error occurred
-                        else {
-                            var correctReply = itemData.Item.Reply.S;
-                            console.log("Data _gettingCorrectReply_ " + correctReply);
-
-                            callback(correctReply);
-                        }
-                    });
-                }
-            });
-        },
-
-        /**
-         * Get a random incorrect reply from the DB. Call the callback function when it has been retrieved.
-         * @param callback
-         */
-        getRandomIncorrectReply: function (callback) {
-            var dynamodb = getDynamoDB();
-            console.log("Start get random incorrect reply");
-
-            // Get the number of incorrect replies by doing a COUNT scan.
-            var countParams = {TableName: "MemoryJaneIncorrectReplies", Select: 'COUNT'};
-            dynamodb.scan(countParams, function (err, data) {
-                if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
-                else {
-                    // Pick a random word from the table.
-                    var number = data.Count;
-                    var rand = (Math.floor(Math.random() * number)) + 1;
-                    var getWordParams = {TableName: "MemoryJaneIncorrectReplies", Key: {Index: {"N": rand.toString()}}};
-
-                    console.log("Data _describingTable_ itemCount: " + number);
-
-                    // Get the random incorrect reply from the table, returns async.
-                    dynamodb.getItem(getWordParams, function (itemError, itemData) {
-                        if (itemError) console.log("Data _gettingIncorrectReply_  ERROR " + itemError); // an error occurred
-                        else {
-                            var incorrectReply = itemData.Item.Reply.S;
-                            console.log("Data _gettingIncorrectReply_ " + incorrectReply);
-
-                            callback(incorrectReply);
-                        }
-                    });
-                }
-            });
         }
-    }
+    };
 }) ();
 
 module.exports = data;
