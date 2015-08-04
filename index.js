@@ -84,6 +84,11 @@ MemoryJane.prototype.intentHandlers = {
                 response.tell(incorrectReply + spelledOutWord);
             });
         }
+    },
+
+    // Intent handler for if the user wants to quit.
+    MemoryJaneQuitIntent: function (intent, session, response) {
+        response.tell("Goodbye");
     }
 };
 
