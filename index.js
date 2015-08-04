@@ -67,7 +67,7 @@ MemoryJane.prototype.intentHandlers = {
         if (sessionWord == undefined) { sessionWord = "banana" }
 
         // Add the try to the database of results for later analysis.
-        data.putResult(sessionWord, userWord, sessionWord == userWord, session.sessionId);
+        data.putResult(sessionWord, intent.slots.RestOfWord.value, sessionWord == userWord, session.sessionId);
 
         console.log("MemoryJane _wordIntent_ sessionWord: " + sessionWord+ " userSpelling: " + userWord);
 
