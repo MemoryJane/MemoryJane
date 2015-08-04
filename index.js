@@ -39,21 +39,21 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
 
     var AWS = require('aws-sdk'),
         dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
+        dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
 
     var params = {
         TableName: "MemoryJaneWords",
         Key: {
-            Index: {
-                "N": "2"
-            }
+            Index: { "N" : "1" }
         }
     };
 
     dynamodb.getItem(params, function(err, data) {
-        if (err) console.log("  ERR  "+err); // an error occurred
+        if (err) console.log("MemoryJane _gettingWord_  "+err); // an error occurred
         else {
-            console.log("  DATA " + data);
-            var word = JSON.stringify(data);
+            var word = data.Item.Word.S;
+            console.log("MemoryJane _gettingWord_ " + word);
+
             var speechOutput = "Spell " + word;
             response.ask(speechOutput);
         }
