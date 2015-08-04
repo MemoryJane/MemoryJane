@@ -40,9 +40,13 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
         // Add the word to the session, so that we can test the user's response against it.
         session.attributes.word = word;
 
-        // Tell Alexa to tell the user to spell the word.
-        var speechOutput = "Spell " + word;
-        response.ask(speechOutput);
+        // Get the prompt to use when asking the user to spell the word.
+        data.getRandomSpellPrompt(function(prompt) {
+            // Tell Alexa to tell the user to spell the word.
+            console.log("MemoryJane _readyToPrompt [" + prompt + word + "]")
+            response.ask(prompt + word);
+        });
+
     });
 };
 

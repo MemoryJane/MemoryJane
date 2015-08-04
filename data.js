@@ -11,9 +11,9 @@ var data = (function () {
      */
     function getDynamoDB () {
         var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-        console.log(dynamodb);
+
         // If there are no credentials, then assume we are running locally.
-        if (!dynamodb.credentials) {
+        if (dynamodb.config.credentials == null) {
             dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
             dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
         }
@@ -21,19 +21,48 @@ var data = (function () {
     }
 
     return {
-        /*
-            Get a random word from the DB. Set it as an attribute in the session. Call the callback
-            function when the word has been retrieved.
+        /**
+         * Get a random prompt from the DB. Call the callback function when it has been retrieved.
+         * NOTE: the prompt will have a trailing space, and it will assume the word to spell goes at the
+         * end of the prompt.
+         * @param callback
+         */
+        getRandomSpellPrompt: function (callback) {
+            var dynamodb = getDynamoDB();
+
+            // Describe the table to get the word count, returns async.
+            var describeParams = { TableName: "MemoryJaneWordPrompts" };
+            dynamodb.describeTable(describeParams, function (err, data) {
+                if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
+                else {
+                    // Pick a random word from the table.
+                    var number = data.Table.ItemCount;
+                    var rand = (Math.floor(Math.random() * number)) + 1;
+                    var getWordParams = { TableName: "MemoryJaneWordPrompts", Key: { Index: {"N": rand.toString()} } };
+
+                    console.log("Data _describingTable_ itemCount: " + number);
+
+                    // Get the random word from the table, returns async.
+                    dynamodb.getItem(getWordParams, function (itemError, itemData) {
+                        if (itemError) console.log("Data _gettingWordPrompt_  ERROR " + itemError); // an error occurred
+                        else {
+                            var prompt = itemData.Item.Prompt.S;
+                            console.log("Data _gettingWordPrompt_ " + prompt);
+
+                            callback(prompt);
+                        }
+                    });
+                }
+            });
+        },
+
+        /**
+         * Get a random word from the DB. Call the callback
+         * function when the word has been retrieved.
+         * @param callback
          */
         getRandomWord: function (callback) {
-            var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-            console.log(dynamodb);
-            // If there are no credentials, then assume we are running locally.
-            if (dynamodb.config.credentials == null) {
-                dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
-                dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
-            }
-
+            var dynamodb = getDynamoDB();
 
             // Describe the table to get the word count, returns async.
             var describeParams = { TableName: "MemoryJaneWords" };
