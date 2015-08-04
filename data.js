@@ -11,7 +11,7 @@ var data = (function () {
      */
     function getDynamoDB () {
         var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-
+        console.log(dynamodb);
         // If there are no credentials, then assume we are running locally.
         if (!dynamodb.credentials) {
             dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
@@ -26,7 +26,15 @@ var data = (function () {
             function when the word has been retrieved.
          */
         getRandomWord: function (callback) {
-            var dynamodb = getDynamoDB();
+            var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+            console.log(dynamodb);
+            // If there are no credentials, then assume we are running locally.
+            if (dynamodb.config.credentials == null) {
+                console.log("No credentials");
+                dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
+                dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
+            }
+            console.log("Exited if");
 
 
             // Describe the table to get the word count, returns async.
