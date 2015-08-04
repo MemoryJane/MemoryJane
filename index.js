@@ -37,25 +37,41 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     //Get a random word from the database and prompt the user to spell it
     //var word = getWord();
 
-    var AWS = require('aws-sdk'),
-        dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
-        dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
+    var AWS = require('aws-sdk');
+    //var dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
+    //dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
 
-    var params = {
-        TableName: "MemoryJaneWords",
-        Key: {
-            Index: { "N" : "1" }
-        }
+    var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+
+    var describeParams = {
+        TableName: "MemoryJaneWords"
     };
 
-    dynamodb.getItem(params, function(err, data) {
-        if (err) console.log("MemoryJane _gettingWord_  "+err); // an error occurred
+    dynamodb.describeTable(describeParams, function (err, data) {
+        if (err) console.log("MemoryJane _describingTable_  " + err); // an error occurred
         else {
-            var word = data.Item.Word.S;
-            console.log("MemoryJane _gettingWord_ " + word);
+            console.log("MemoryJane _describingTable_ " + data);
 
-            var speechOutput = "Spell " + word;
-            response.ask(speechOutput);
+            var number = data.Table.ItemCount;
+            var rand = (Math.floor(Math.random() * number)) + 1;
+
+            var params = {
+                TableName: "MemoryJaneWords",
+                Key: {
+                    Index: {"N": rand.toString()}
+                }
+            };
+
+            dynamodb.getItem(params, function (itemError, itemData) {
+                if (itemError) console.log("MemoryJane _gettingWord_  " + itemError); // an error occurred
+                else {
+                    var word = itemData.Item.Word.S;
+                    console.log("MemoryJane _gettingWord_ " + word);
+
+                    var speechOutput = "Spell " + word;
+                    response.ask(speechOutput);
+                }
+            });
         }
     });
 };
