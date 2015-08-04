@@ -34,48 +34,15 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     console.log("MemoryJane onLaunch requestId: " + launchRequest.requestId
         + ", sessionId: " + session.sessionId);
 
-    //Get a random word from the database and prompt the user to spell it
-    var AWS = require('aws-sdk');
-    var dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
-    dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
-    //var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
+    // Use the data object to get a random word and ask the user to spell it.
+    var data = require("./data.js");
+    data.getRandomWord(function(word) {
+        // Add the word to the session, so that we can test the user's response against it.
+        session.attributes.word = word;
 
-    var describeParams = {
-        TableName: "MemoryJaneWords"
-    };
-
-    // Describe the table to get the word count, returns async.
-    dynamodb.describeTable(describeParams, function (err, data) {
-        if (err) console.log("MemoryJane _describingTable_  ERROR " + err); // an error occurred
-        else {
-            console.log("MemoryJane _describingTable_ " + data);
-
-            // Pick a random word from the table.
-            var number = data.Table.ItemCount;
-            var rand = (Math.floor(Math.random() * number)) + 1;
-            var params = {
-                TableName: "MemoryJaneWords",
-                Key: {
-                    Index: {"N": rand.toString()}
-                }
-            };
-
-            // Get the random word from the table, returns async.
-            dynamodb.getItem(params, function (itemError, itemData) {
-                if (itemError) console.log("MemoryJane _gettingWord_  ERROR " + itemError); // an error occurred
-                else {
-                    var word = itemData.Item.Word.S;
-                    console.log("MemoryJane _gettingWord_ " + word);
-
-                    // Add the word to the session, so that we can test the user's response against it.
-                    session.attributes.word = word;
-
-                    // Tell Alexa to tell the user to spell the word.
-                    var speechOutput = "Spell " + word;
-                    response.ask(speechOutput);
-                }
-            });
-        }
+        // Tell Alexa to tell the user to spell the word.
+        var speechOutput = "Spell " + word;
+        response.ask(speechOutput);
     });
 };
 
