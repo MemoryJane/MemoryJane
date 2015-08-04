@@ -91,7 +91,7 @@ MemoryJane.prototype.intentHandlers = {
         console.log("MemoryJane _wordIntent_ sessionWord: " + session.attributes.word + " userSpelling: "
             + intent.slots.RestOfWord.value);
 
-        var userWord = intent.slots.RestOfWord.value.replace(".", "").replace(" ","");
+        var userWord = intent.slots.RestOfWord.value.replace(/ /g, "").replace(/\./g,"");
         if (userWord == session.attributes.word) {
             response.tell("Yee-haw! You got it right! You Said " + intent.slots.RestOfWord.value);
         } else {
