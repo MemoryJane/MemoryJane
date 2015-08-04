@@ -69,19 +69,33 @@ MemoryJane.prototype.intentHandlers = {
 
         var data = require("./data.js");
         if (userWord == sessionWord) {
-            // Get the correct reply.
-            data.getRandomCorrectReply(function (correctReply) {
-                // Tell Alexa to give the correct reply to the user.
-                console.log("MemoryJane _readyToCorrectReply [" + correctReply + "]")
-                response.tell(correctReply);
+            data.getRandomWord(function (word) {
+                // Add the word to the session.
+                session.attributes.word = word;
+                newWord = word;
+                data.getRandomSpellPrompt(function (prompt) {
+                    // Get the correct reply.
+                    data.getRandomCorrectReply(function (correctReply) {
+                        // Tell Alexa to give the correct reply to the user.
+                        console.log("MemoryJane _readyToCorrectReply [" + correctReply + "]")
+                        response.ask(correctReply + " " + prompt + " " + newWord);
+                    });
+                });
             });
         } else {
-            // Get the incorrect reply.
-            data.getRandomIncorrectReply(function (incorrectReply) {
-                // Tell Alexa to give the incorrect reply to the user.
-                var spelledOutWord = sessionWord.split('').join(". ").concat(".");
-                console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + spelledOutWord + "]")
-                response.tell(incorrectReply + spelledOutWord);
+            data.getRandomWord(function (word) {
+                // Add the word to the session.
+                session.attributes.word = word;
+                newWord = word;
+                data.getRandomSpellPrompt(function (prompt) {
+                    // Get the incorrect reply.
+                    data.getRandomIncorrectReply(function (incorrectReply) {
+                        // Tell Alexa to give the incorrect reply to the user.
+                        var spelledOutWord = sessionWord.split('').join(". ").concat(".");
+                        console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + spelledOutWord + "]")
+                        response.ask(incorrectReply + spelledOutWord + " " + prompt + " " + newWord);
+                    });
+                });
             });
         }
     },
