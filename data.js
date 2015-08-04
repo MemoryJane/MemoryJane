@@ -94,6 +94,8 @@ var data = (function () {
         /**
          * Get a random correct reply from the DB. Call the callback
          * function when the word has been retrieved.
+         * This is a complete sentence, congratulating the user. It is assumed that the word will not appear
+         * in the congratulations.
          * @param callback
          */
         getRandomCorrectReply: function (callback) {
@@ -129,9 +131,11 @@ var data = (function () {
         /**
          * Get a random incorrect reply from the DB. Call the callback
          * function when the word has been retrieved.
+         * The reply is an incomplete sentence. It is assumed that the correct spelling of the word will be appended
+         * at the end of the reply that is sent back.
          * @param callback
          */
-        getRandomWord: function (callback) {
+        getRandomIncorrectReply: function (callback) {
             var dynamodb = getDynamoDB();
 
             // Get the number of incorrect replies by doing a COUNT scan.

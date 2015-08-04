@@ -59,23 +59,29 @@ MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedReques
 MemoryJane.prototype.intentHandlers = {
     // One event handler for all of the letters.
     MemoryJaneWordIntent: function (intent, session, response) {
-        console.log("MemoryJane _wordIntent_ sessionWord: " + session.attributes.word + " userSpelling: "
-            + intent.slots.RestOfWord.value);
-
         var userWord = intent.slots.RestOfWord.value.replace(/ /g, "").replace(/\./g,"");
-        if (userWord == session.attributes.word) {
+        var sessionWord = session.attributes.word;
+
+        // HACK: if running locally, there won't be a sessionWord, so hack one in.
+        if (sessionWord == undefined) { sessionWord = "banana" }
+
+        console.log("MemoryJane _wordIntent_ sessionWord: " + sessionWord+ " userSpelling: " + userWord);
+
+        var data = require("./data.js");
+        if (userWord == sessionWord) {
             // Get the correct reply.
             data.getRandomCorrectReply(function (correctReply) {
                 // Tell Alexa to give the correct reply to the user.
-                console.log("MemoryJane _readyToCorrectReply [" + correctReply + word + "]")
-                response.tell(correctReply + " You Said " + intent.slots.RestOfWord.value);
+                console.log("MemoryJane _readyToCorrectReply [" + correctReply + "]")
+                response.tell(correctReply);
             });
         } else {
             // Get the incorrect reply.
-            data.getRandomIncorrectReply(function (correctReply) {
+            data.getRandomIncorrectReply(function (incorrectReply) {
                 // Tell Alexa to give the incorrect reply to the user.
-                console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + word + "]")
-                response.tell(incorrectReply + " You Said " + intent.slots.RestOfWord.value);
+                var spelledOutWord = sessionWord.split('').join(". ").concat(".");
+                console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + spelledOutWord + "]")
+                response.tell(incorrectReply + spelledOutWord);
             });
         }
     }
