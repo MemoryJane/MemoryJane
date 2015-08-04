@@ -64,9 +64,19 @@ MemoryJane.prototype.intentHandlers = {
 
         var userWord = intent.slots.RestOfWord.value.replace(/ /g, "").replace(/\./g,"");
         if (userWord == session.attributes.word) {
-            response.tell("Yee-haw! You got it right! You Said " + intent.slots.RestOfWord.value);
+            // Get the correct reply.
+            data.getRandomCorrectReply(function (correctReply) {
+                // Tell Alexa to give the correct reply to the user.
+                console.log("MemoryJane _readyToCorrectReply [" + correctReply + word + "]")
+                response.tell(correctReply + " You Said " + intent.slots.RestOfWord.value);
+            });
         } else {
-            response.tell("You Said " + intent.slots.RestOfWord.value);
+            // Get the incorrect reply.
+            data.getRandomIncorrectReply(function (correctReply) {
+                // Tell Alexa to give the incorrect reply to the user.
+                console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + word + "]")
+                response.tell(incorrectReply + " You Said " + intent.slots.RestOfWord.value);
+            });
         }
     }
 };
