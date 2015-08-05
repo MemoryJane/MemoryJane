@@ -68,43 +68,37 @@ MemoryJane.prototype.intentHandlers = {
 
         // Add the try to the database of results for later analysis.
         data.putResult(sessionWord, intent.slots.RestOfWord.value, sessionWord == userWord, session.sessionId);
-
         console.log("MemoryJane _wordIntent_ sessionWord: " + sessionWord+ " userSpelling: " + userWord);
 
-        if (userWord == sessionWord) {
-            data.getRandomWord(function (word) {
-                // Add the word to the session.
-                session.attributes.word = word;
-                newWord = word;
-                data.getRandomSpellPrompt(function (prompt) {
-                    // Get the correct reply.
+        // Get the next random word from the db. It returns async.
+        data.getRandomWord(function (word) {
+            // Add the word to the session.
+            session.attributes.word = word;
+
+            // Get a random prompt.
+            data.getRandomSpellPrompt(function (prompt) {
+                if (userWord == sessionWord) {
+                    // Word was correct, get a reply that congratulates the user.
                     data.getRandomCorrectReply(function (correctReply) {
                         // Tell Alexa to give the correct reply to the user.
                         console.log("MemoryJane _readyToCorrectReply [" + correctReply + "]")
-                        response.ask(correctReply + " " + prompt + " " + newWord);
+                        response.ask(correctReply + " " + prompt + " " + word);
                     });
-                });
-            });
-        } else {
-            data.getRandomWord(function (word) {
-                // Add the word to the session.
-                session.attributes.word = word;
-                newWord = word;
-                data.getRandomSpellPrompt(function (prompt) {
-                    // Get the incorrect reply.
+                } else {
                     data.getRandomIncorrectReply(function (incorrectReply) {
-                        // Tell Alexa to give the incorrect reply to the user.
+                        // Word was incorrect, tell the user they were wrong.
                         var spelledOutWord = sessionWord.split('').join(". ").concat(".");
                         console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + spelledOutWord + "]")
-                        response.ask(incorrectReply + spelledOutWord + " " + prompt + " " + newWord);
+                        response.ask(incorrectReply + spelledOutWord + " " + prompt + " " + word);
                     });
-                });
+                }
             });
-        }
+        });
     },
 
     // Intent handler for if the user wants to quit.
     MemoryJaneQuitIntent: function (intent, session, response) {
+        // TODO Do we want more than one goodbye? Should this end up in the DB like everything else?
         response.tell("Goodbye");
     }
 };

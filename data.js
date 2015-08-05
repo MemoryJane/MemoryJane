@@ -83,7 +83,6 @@ var data = (function () {
                         else {
                             var word = itemData.Item.Word.S;
                             console.log("Data _gettingWord_ " + word);
-
                             callback(word);
                         }
                     });
@@ -187,7 +186,6 @@ var data = (function () {
 
             dynamodb.putItem(resultParams, function(err, data) {
                 if (err) console.log(err); // an error occurred
-                else console.log(data); // successful response
             });
         }
     };
