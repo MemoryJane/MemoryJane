@@ -1,4 +1,3 @@
-
 {
   "version": "1.0",
   "session": {
@@ -7,19 +6,19 @@
     "application": {
       "applicationId": "MemoryJane"
     }
-    },
-    "user": {
-      "userId": "Aaron"
-    },
+  },
+  "user": {
+    "userId": "Aaron"
+  },
   "request": {
-    "type": "IntentRequest",
-    "requestId": "MemoryJaneWordIntent",
+    "type": "LaunchRequest",
+    "requestId": "MemoryJaneQuestionIntent",
     "timestamp": "2015-05-13T12:34:56Z",
     "intent": {
-      "name": "MemoryJaneWordIntent",
+      "name": "MemoryJaneQuestionIntent",
       "slots": {
-        "RestOfWord": {
-          "name": "RestOfWord",
+        "Answer": {
+          "name": "Answer",
           "value": "m. e. m. o. r. y."
         }
       }

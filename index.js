@@ -34,19 +34,13 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     console.log("MemoryJane onLaunch requestId: " + launchRequest.requestId
         + ", sessionId: " + session.sessionId);
 
-    // Use the data object to get a random word and ask the user to spell it.
+    // Use the data object to get a random question and ask the user to answer it.
     var data = require("./data.js");
-    data.getRandomWord(function(word) {
-        // Add the word to the session, so that we can test the user's response against it.
-        session.attributes.word = word;
-
-        // Get the prompt to use when asking the user to spell the word.
-        data.getRandomSpellPrompt(function(prompt) {
-            // Tell Alexa to tell the user to spell the word.
-            console.log("MemoryJane _readyToPrompt [" + prompt + word + "]")
-            response.ask(prompt + word);
-        });
-
+    data.getNewQuestion(session, function (question) {
+        session.attributes.Question = question;
+        //Tell Alexa to ask the user the question
+        console.log("MemoryJane _readyToAskQuestion_ : [" + question + "]");
+        response.ask(question);
     });
 };
 
@@ -57,42 +51,28 @@ MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedReques
 };
 
 MemoryJane.prototype.intentHandlers = {
-    // One event handler for all of the letters.
-    MemoryJaneWordIntent: function (intent, session, response) {
-        var data = require("./data.js");
-        var userWord = intent.slots.RestOfWord.value.replace(/ /g, "").replace(/\./g,"");
-        var sessionWord = session.attributes.word;
 
-        // HACK: if running locally, there won't be a sessionWord, so hack one in.
-        if (sessionWord == undefined) { sessionWord = "banana" }
+    MemoryJaneQuestionIntent: function (intent, session, response) {
+        var data = require("./data.js");
+        var userAnswer = intent.slots.Answer.value;
+        var sessionAnswer = session.attributes.Answer;
+
+        // HACK: if running locally, there won't be a sessionQuestion, so hack one in.
+        if (sessionAnswer == undefined) {
+            sessionAnswer = "Buckeyes"
+        }
 
         // Add the try to the database of results for later analysis.
-        data.putResult(sessionWord, intent.slots.RestOfWord.value, sessionWord == userWord, session.sessionId);
-        console.log("MemoryJane _wordIntent_ sessionWord: " + sessionWord+ " userSpelling: " + userWord);
+        //data.putResult(sessionWord, intent.slots.RestOfWord.value, sessionWord == userWord, session.sessionId);
+        console.log("MemoryJane _questionIntent_ sessionQuestion: " + session.attributes.Question + " userAnswer: " + userAnswer);
 
-        // Get the next random word from the db. It returns async.
-        data.getRandomWord(function (word) {
-            // Add the word to the session.
-            session.attributes.word = word;
-
-            // Get a random prompt.
-            data.getRandomSpellPrompt(function (prompt) {
-                if (userWord == sessionWord) {
-                    // Word was correct, get a reply that congratulates the user.
-                    data.getRandomCorrectReply(function (correctReply) {
-                        // Tell Alexa to give the correct reply to the user.
-                        console.log("MemoryJane _readyToCorrectReply [" + correctReply + "]")
-                        response.ask(correctReply + " " + prompt + " " + word);
-                    });
-                } else {
-                    data.getRandomIncorrectReply(function (incorrectReply) {
-                        // Word was incorrect, tell the user they were wrong.
-                        var spelledOutWord = sessionWord.split('').join(". ").concat(".");
-                        console.log("MemoryJane _readyToIncorrectReply [" + incorrectReply + spelledOutWord + "]")
-                        response.ask(incorrectReply + spelledOutWord + " " + prompt + " " + word);
-                    });
+        // Get the next random question from the db. It returns async.
+        data.getNewQuestion(function (question) {
+            data.getResponse(function (session, userAnswer, response) {
+                {
+                    response.ask(response + " . " + question);
                 }
-            });
+        });
         });
     },
 
@@ -100,6 +80,7 @@ MemoryJane.prototype.intentHandlers = {
     MemoryJaneQuitIntent: function (intent, session, response) {
         // TODO Do we want more than one goodbye? Should this end up in the DB like everything else?
         response.tell("Goodbye");
+
     }
 };
 
