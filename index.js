@@ -37,7 +37,6 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     // Use the data object to get a random question and ask the user to answer it.
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
-        //session.attributes.Question = question;
         //Tell Alexa to ask the user the question
         console.log("MemoryJane _readyToAskLaunchQuestion_ : " + question);
         response.ask(question);
