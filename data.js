@@ -22,38 +22,45 @@ var data = (function () {
     }
 
     /**
+     * Get a random item from a table.
+     * Assumes there is an "Index" in the table.
+     */
+    function getRandomItemFromTable(tableName, randomItemCallback) {
+        var dynamodb = getDynamoDB();
+
+        var incorrectReplyParams = {TableName: tableName, Select: 'COUNT'};
+        dynamodb.scan(incorrectReplyParams, function (tableReplyErr, tableReplyData) {
+            if (tableReplyErr) {
+                console.log("Data _getRandomItemFromTable  ERROR " + tableReplyErr);
+            } else {
+                var tableLength = tableReplyData.Count;
+                var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
+                var tableItemParams = {
+                    TableName: tableName,
+                    Key: {Index: {"N": randomIndex.toString()}}
+                };
+
+                // Get the random incorrect reply from the table, returns async.
+                dynamodb.getItem(tableItemParams, function (getTableItemError, getTableItemData) {
+                    if (getTableItemError) {
+                        console.log("Data _getRandomItemFromTable  ERROR " + getTableItemError);
+                    } else {
+                        randomItemCallback(getTableItemData.Item);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
      * Get a random incorrect reply from the DB. Call the callback
      * function when the word has been retrieved.
      * The reply is an incomplete sentence. It is assumed that the correct answer will be appended
      * at the end of the reply that is sent back.
      */
     function getRandomIncorrectReply(incorrectReplyCallback) {
-        var dynamodb = getDynamoDB();
-
-        // Get the number of incorrect replies by doing a COUNT scan.
-        var incorrectReplyParams = {TableName: "MemoryJaneIncorrectReplies", Select: 'COUNT'};
-        dynamodb.scan(incorrectReplyParams, function (incorrectReplyErr, incorrectReplyData) {
-            if (incorrectReplyErr) {
-                console.log("Data _getRandomIncorrectReply  ERROR " + incorrectReplyErr);
-            } else {
-                // Pick a random incorrect reply from the table.
-                var tableLength = incorrectReplyData.Count;
-                var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
-                var getIncorrectReplyParams = {
-                    TableName: "MemoryJaneIncorrectReplies",
-                    Key: {Index: {"N": randomIndex.toString()}}
-                };
-
-                // Get the random incorrect reply from the table, returns async.
-                dynamodb.getItem(getIncorrectReplyParams, function (getIncorrectReplyItemError, getIncorrectReplyItemData) {
-                    if (getIncorrectReplyItemError) {
-                        console.log("Data _getRandomIncorrectReply  ERROR " + getIncorrectReplyItemError);
-                    } else {
-                        var incorrectReply = getIncorrectReplyItemData.Item.Reply.S;
-                        incorrectReplyCallback(incorrectReply);
-                    }
-                });
-            }
+        getRandomItemFromTable("MemoryJaneIncorrectReplies", function(incorrectReplyItem) {
+            incorrectReplyCallback(incorrectReplyItem.Reply.S);
         });
     }
 
@@ -64,34 +71,9 @@ var data = (function () {
      * in the congratulations.
      */
     function getRandomCorrectReply(correctReplyCallback) {
-        var dynamodb = getDynamoDB();
-
-        // Get the number of correct replies by doing a COUNT scan.
-        var correctReplyParams = {TableName: "MemoryJaneCorrectReplies", Select: 'COUNT'};
-        dynamodb.scan(correctReplyParams, function (correctReplyErr, correctReplyData) {
-            if (correctReplyErr) {
-                console.log("Data _getRandomCorrectReply  ERROR " + correctReplyErr);
-            } else {
-                // Pick a random correct reply from the table.
-                var tableLength = correctReplyData.Count;
-                var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
-                var getCorrectReplyParams = {
-                    TableName: "MemoryJaneCorrectReplies",
-                    Key: {Index: {"N": randomIndex.toString()}}
-                };
-
-                // Get the random correct reply from the table, returns async.
-                dynamodb.getItem(getCorrectReplyParams, function (getCorrectReplyItemError, getCorrectReplyItemData) {
-                    if (getCorrectReplyItemError) {
-                        console.log("Data _getRandomCorrectReply  ERROR " + getCorrectReplyItemError);
-                    } else {
-                        var correctReply = getCorrectReplyItemData.Item.Reply.S;
-                        correctReplyCallback(correctReply);
-                    }
-                });
-            }
+        getRandomItemFromTable("MemoryJaneCorrectReplies", function(correctReplyItem) {
+            correctReplyCallback(correctReplyItem.Reply.S);
         });
-
     }
 
     /**
@@ -100,32 +82,9 @@ var data = (function () {
      * @param promptCallback
      */
     function getRandomPrompt(promptTag, promptCallback) {
-        //Get a new question and answer from the database
-        var dynamodb = getDynamoDB();
-
-        // Get the number of questions by doing a COUNT scan.
-        var promptParams = {TableName: "MemoryJane" + promptTag + "Prompts", Select: 'COUNT'};
-        dynamodb.scan(promptParams, function (promptErr, promptData) {
-            if (promptErr) {
-                console.log("Data _getRandomPrompt  ERROR " + promptErr);
-            } else {
-                // Pick a random prompt from the table.
-                var tableLength = promptData.Count;
-                var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
-                var getPromptParams = {
-                    TableName: "MemoryJane" + promptTag + "Prompts",
-                    Key: {Index: {"N": randomIndex.toString()}}
-                };
-
-                // Get the random incorrect reply from the table, returns async.
-                dynamodb.getItem(getPromptParams, function (promptItemError, promptItemData) {
-                    if (promptItemError) console.log("Data _getRandomPrompt  ERROR " + promptItemError); // an error occurred
-                    else {
-                        var prompt = promptItemData.Item.Prompt.S;
-                        promptCallback(prompt);
-                    }
-                });
-            }
+        var tableName = "MemoryJane" + promptTag + "Prompts";
+        getRandomItemFromTable(tableName, function(promptItem) {
+            promptCallback(promptItem.Prompt.S);
         });
     }
 
