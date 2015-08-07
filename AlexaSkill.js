@@ -51,7 +51,7 @@ AlexaSkill.prototype.eventHandlers = {
      * The subclass must override this function and provide feedback to the user.
      */
     onLaunch: function (launchRequest, session, response) {
-        throw "onLaunch should be overriden by subclass";
+        throw "AlexaSkill  ERROR onLaunch should be overriden by subclass";
     },
 
     /**
@@ -62,10 +62,10 @@ AlexaSkill.prototype.eventHandlers = {
             intentName = intentRequest.intent.name,
             intentHandler = this.intentHandlers[intentName];
         if (intentHandler) {
-            console.log('AlexaSkill _dispatch_ intent = ' + intentName);
+            console.log('AlexaSkill _onIntent dispatch intent = ' + intentName);
             intentHandler.call(this, intent, session, response);
         } else {
-            throw 'AlexaSkill Unsupported intent = ' + intentName;
+            throw 'AlexaSkill  ERROR Unsupported intent: ' + intentName;
         }
     },
 
@@ -90,11 +90,11 @@ AlexaSkill.prototype.intentHandlers = {};
  */
 AlexaSkill.prototype.execute = function (event, context) {
     try {
-        console.log("AlexaSkill _execute_ session applicationId: " + event.session.application.applicationId);
+        console.log("AlexaSkill _execute session applicationId: " + event.session.application.applicationId);
 
         // Validate that this request originated from authorized source.
         if (this._appId && event.session.application.applicationId !== this._appId) {
-            console.log("AlexaSkill _error_ the applicationIds don't match : "
+            console.log("AlexaSkill _error the applicationIds don't match : "
                 + event.session.application.applicationId + " and "
                 + this._appId);
             context.fail();
@@ -115,7 +115,7 @@ AlexaSkill.prototype.execute = function (event, context) {
         var response = new Response(context, event.session);
         requestHandler.call(this, event, context, response);
     } catch (exception) {
-        console.log("AlexaSkill _execute_ unexpected exception " + exception.stack);
+        console.log("AlexaSkill _execute  ERROR unexpected exception " + exception.stack);
     }
 };
 
@@ -172,6 +172,7 @@ Response.prototype = (function () {
 
     return {
         tell: function (speechOutput) {
+            console.log("  -----  ALEXA SAYS: "+speechOutput);
             this._context.succeed(buildSpeechletResponse({
                 session: this._session,
                 output: speechOutput,
@@ -179,6 +180,7 @@ Response.prototype = (function () {
             }));
         },
         tellWithCard: function (speechOutput, cardTitle, cardContent) {
+            console.log("  -----  ALEXA SAYS: "+speechOutput);
             this._context.succeed(buildSpeechletResponse({
                 session: this._session,
                 output: speechOutput,
@@ -188,6 +190,7 @@ Response.prototype = (function () {
             }));
         },
         ask: function (speechOutput, repromptSpeech) {
+            console.log("  -----  ALEXA SAYS: "+speechOutput);
             this._context.succeed(buildSpeechletResponse({
                 session: this._session,
                 output: speechOutput,
@@ -196,6 +199,7 @@ Response.prototype = (function () {
             }));
         },
         askWithCard: function (speechOutput, repromptSpeech, cardTitle, cardContent) {
+            console.log("  -----  ALEXA SAYS: "+speechOutput);
             this._context.succeed(buildSpeechletResponse({
                 session: this._session,
                 output: speechOutput,

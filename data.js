@@ -16,7 +16,7 @@ var data = (function () {
         if (dynamodb.config.credentials == null) {
             dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
             dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
-            console.log("DATA _getDynamoDB_ USING LOCAL DB");
+            console.log("Data _getDynamoDB using LOCAL db");
         }
         return dynamodb;
     }
@@ -33,8 +33,9 @@ var data = (function () {
         // Get the number of incorrect replies by doing a COUNT scan.
         var incorrectReplyParams = {TableName: "MemoryJaneIncorrectReplies", Select: 'COUNT'};
         dynamodb.scan(incorrectReplyParams, function (incorrectReplyErr, incorrectReplyData) {
-            if (incorrectReplyErr) console.log("Data _describingTable_  ERROR " + incorrectReplyErr); // an error occurred
-            else {
+            if (incorrectReplyErr) {
+                console.log("Data _getRandomIncorrectReply  ERROR " + incorrectReplyErr);
+            } else {
                 // Pick a random incorrect reply from the table.
                 var tableLength = incorrectReplyData.Count;
                 var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
@@ -43,15 +44,12 @@ var data = (function () {
                     Key: {Index: {"N": randomIndex.toString()}}
                 };
 
-                console.log("Data _describingTable_ itemCount: " + tableLength);
-
                 // Get the random incorrect reply from the table, returns async.
                 dynamodb.getItem(getIncorrectReplyParams, function (getIncorrectReplyItemError, getIncorrectReplyItemData) {
-                    if (getIncorrectReplyItemError) console.log("Data _gettingWord_  ERROR " + getIncorrectReplyItemError); // an error occurred
-                    else {
+                    if (getIncorrectReplyItemError) {
+                        console.log("Data _getRandomIncorrectReply  ERROR " + getIncorrectReplyItemError);
+                    } else {
                         var incorrectReply = getIncorrectReplyItemData.Item.Reply.S;
-                        console.log("Data _gettingWord_ " + incorrectReply);
-
                         incorrectReplyCallback(incorrectReply);
                     }
                 });
@@ -71,8 +69,9 @@ var data = (function () {
         // Get the number of correct replies by doing a COUNT scan.
         var correctReplyParams = {TableName: "MemoryJaneCorrectReplies", Select: 'COUNT'};
         dynamodb.scan(correctReplyParams, function (correctReplyErr, correctReplyData) {
-            if (correctReplyErr) console.log("Data _describingTable_  ERROR " + correctReplyErr); // an error occurred
-            else {
+            if (correctReplyErr) {
+                console.log("Data _getRandomCorrectReply  ERROR " + correctReplyErr);
+            } else {
                 // Pick a random correct reply from the table.
                 var tableLength = correctReplyData.Count;
                 var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
@@ -81,15 +80,12 @@ var data = (function () {
                     Key: {Index: {"N": randomIndex.toString()}}
                 };
 
-                console.log("Data _describingTable_ itemCount: " + tableLength);
-
                 // Get the random correct reply from the table, returns async.
                 dynamodb.getItem(getCorrectReplyParams, function (getCorrectReplyItemError, getCorrectReplyItemData) {
-                    if (getCorrectReplyItemError) console.log("Data _gettingCorrectReply_  ERROR " + getCorrectReplyItemError); // an error occurred
-                    else {
+                    if (getCorrectReplyItemError) {
+                        console.log("Data _getRandomCorrectReply  ERROR " + getCorrectReplyItemError);
+                    } else {
                         var correctReply = getCorrectReplyItemData.Item.Reply.S;
-                        console.log("Data _gettingCorrectReply_ " + correctReply);
-
                         correctReplyCallback(correctReply);
                     }
                 });
@@ -110,8 +106,9 @@ var data = (function () {
         // Get the number of questions by doing a COUNT scan.
         var promptParams = {TableName: "MemoryJane" + promptTag + "Prompts", Select: 'COUNT'};
         dynamodb.scan(promptParams, function (promptErr, promptData) {
-            if (promptErr) console.log("Data _describingTable_  ERROR " + promptErr); // an error occurred
-            else {
+            if (promptErr) {
+                console.log("Data _getRandomPrompt  ERROR " + promptErr);
+            } else {
                 // Pick a random prompt from the table.
                 var tableLength = promptData.Count;
                 var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
@@ -120,11 +117,9 @@ var data = (function () {
                     Key: {Index: {"N": randomIndex.toString()}}
                 };
 
-                console.log("Data _describingTable_ itemCount: " + tableLength);
-
                 // Get the random incorrect reply from the table, returns async.
                 dynamodb.getItem(getPromptParams, function (promptItemError, promptItemData) {
-                    if (promptItemError) console.log("Data _gettingRandomPrompt_  ERROR " + promptItemError); // an error occurred
+                    if (promptItemError) console.log("Data _getRandomPrompt  ERROR " + promptItemError); // an error occurred
                     else {
                         var prompt = promptItemData.Item.Prompt.S;
                         promptCallback(prompt);
@@ -147,8 +142,9 @@ var data = (function () {
             // Get the number of questions by doing a COUNT scan.
             var newQuestionParams = {TableName: "MemoryJaneFlashCards", Select: 'COUNT'};
             dynamodb.scan(newQuestionParams, function (newQuestionErr, newQuestionData) {
-                if (newQuestionErr) console.log("Data _describingTable_  ERROR " + newQuestionErr); // an error occurred
-                else {
+                if (newQuestionErr) {
+                    console.log("Data _getNewQuestion  ERROR " + newQuestionErr);
+                } else {
                     // Pick a random question from the table.
                     var tableLength = newQuestionData.Count;
                     var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
@@ -159,8 +155,9 @@ var data = (function () {
 
                     // Get the random incorrect reply from the table, returns async.
                     dynamodb.getItem(getQuestionParams, function (getQuestionItemError, getQuestionItemData) {
-                        if (getQuestionItemError) console.log("Data _gettingNewQuestion_  ERROR " + getQuestionItemError); // an error occurred
-                        else {
+                        if (getQuestionItemError) {
+                            console.log("Data _getNewQuestion ERROR " + getQuestionItemError);
+                        } else {
                             var question = getQuestionItemData.Item.Question.S;
                             session.attributes.Answer = getQuestionItemData.Item.Answer.S;
 
@@ -171,9 +168,9 @@ var data = (function () {
                                     var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
                                     callback(questionWithPrompt);
                                 });
+                            } else {
+                                callback(question);
                             }
-
-                            callback(question);
                         }
                     });
                 }
@@ -189,19 +186,21 @@ var data = (function () {
          */
         getResponse: function (session, userAnswer, callback) {
             var correctAnswer = session.attributes.Answer;
-            console.log("Data _getResponse correctAnswer: "+correctAnswer+" userAnswer: "+userAnswer);
+
+            // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
+            if (correctAnswer == undefined) {
+                correctAnswer = "LOCAL_HACK";
+            }
 
             //Check if the user gave the correct answer
             if (userAnswer == correctAnswer) {
                 //Pull a correct response from the database
-                console.log("Data _gettingCorrectResponse: ");
                 getRandomCorrectReply(function (correctReply) {
                     callback(correctReply);
                 });
             }
             else {
                 //Pull an incorrect response from the database
-                console.log("Data _gettingIncorrectResponse: ");
                 getRandomIncorrectReply(function (incorrectReply) {
                     callback(incorrectReply.replace('%1', ' ' + correctAnswer + ' '));
                 });
@@ -210,12 +209,19 @@ var data = (function () {
 
         /**
          * Put the result of a session into the DB of results, for review and analysis later.
-         * @param correctAnswer
          * @param userAnswer
-         * @param correct
-         * @param sessionID
+         * @param session
          */
-        putResult: function (correctAnswer, userAnswer, correct, sessionID) {
+        putResult: function (userAnswer, session) {
+            var correctAnswer = session.attributes.Answer;
+            var sessionID = session.sessionId;
+            var correct = correctAnswer == userAnswer;
+
+            // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
+            if (correctAnswer == undefined) {
+                correctAnswer = "LOCAL_HACK";
+            }
+
             var dynamodb = getDynamoDB();
             var resultParams = { TableName: 'MemoryJaneResults',
                 Item: {
@@ -227,6 +233,7 @@ var data = (function () {
                 }
             };
 
+            console.log("Date _putResult correctAnswer: "+correctAnswer+" userAnswer: "+userAnswer);
             dynamodb.putItem(resultParams, function (resultErr, data) {
                 if (resultErr) console.log(resultErr); // an error occurred
             });

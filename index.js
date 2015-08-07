@@ -25,26 +25,25 @@ MemoryJane.prototype = Object.create(AlexaSkill.prototype);
 MemoryJane.prototype.constructor = MemoryJane;
 
 MemoryJane.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
-    console.log("MemoryJane onSessionStarted requestId: " + sessionStartedRequest.requestId
+    console.log("MemoryJane _onSessionStarted requestId: " + sessionStartedRequest.requestId
         + ", sessionId: " + session.sessionId);
     // any initialization logic goes here
 };
 
 MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-    console.log("MemoryJane onLaunch requestId: " + launchRequest.requestId
+    console.log("MemoryJane _onLaunch requestId: " + launchRequest.requestId
         + ", sessionId: " + session.sessionId);
 
     // Use the data object to get a random question and ask the user to answer it.
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
         //Tell Alexa to ask the user the question
-        console.log("MemoryJane _readyToAskLaunchQuestion_ : " + question);
         response.ask(question);
     });
 };
 
 MemoryJane.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
-    console.log("MemoryJane onSessionEnded requestId: " + sessionEndedRequest.requestId
+    console.log("MemoryJane _onSessionEnded requestId: " + sessionEndedRequest.requestId
         + ", sessionId: " + session.sessionId);
     // any cleanup logic goes here
 };
@@ -54,19 +53,13 @@ MemoryJane.prototype.intentHandlers = {
     MemoryJaneQuestionIntent: function (intent, session, response) {
         var data = require("./data.js");
         var userAnswer = intent.slots.Answer.value;
-        var sessionAnswer = session.attributes.Answer;
 
-        // HACK: if running locally, there won't be a sessionQuestion, so hack one in.
-        if (sessionAnswer == undefined) {
-            sessionAnswer = "Buckeyes"
-        }
-
-        // Try to add the result to the database of results for later analysis.
-        data.putResult(sessionAnswer, userAnswer, sessionAnswer == userAnswer, session.sessionId);
+        // Add the result to a database of results for later analysis.
+        data.putResult(userAnswer, session);
 
         // Get the next random question from the db. It returns async.
-        data.getNewQuestion(session, function (question) {
-            data.getResponse(session, userAnswer, function (answerResponse) {
+        data.getResponse(session, userAnswer, function (answerResponse) {
+            data.getNewQuestion(session, function (question) {
                 response.ask(answerResponse + " . " + question);
             });
         });
@@ -87,7 +80,7 @@ MemoryJane.prototype.intentHandlers = {
  */
 exports.handler = function (event, context) {
     // Create an instance of the MemoryJane skill and execute it.
-    console.log("MemoryJane _handler_ creating MemoryJane object");
+    console.log("MemoryJane _handler creating MemoryJane object");
     var memoryJane = new MemoryJane();
     memoryJane.execute(event, context);
     console.log("MemoryJane _handler_ done");
