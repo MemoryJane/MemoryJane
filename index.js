@@ -37,9 +37,9 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     // Use the data object to get a random question and ask the user to answer it.
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
-        session.attributes.Question = question;
+        //session.attributes.Question = question;
         //Tell Alexa to ask the user the question
-        console.log("MemoryJane _readyToAskQuestion_ : [" + question + "]");
+        console.log("MemoryJane _readyToAskLaunchQuestion_ : " + question);
         response.ask(question);
     });
 };
@@ -62,17 +62,14 @@ MemoryJane.prototype.intentHandlers = {
             sessionAnswer = "Buckeyes"
         }
 
-        // Add the try to the database of results for later analysis.
-        //data.putResult(sessionWord, intent.slots.RestOfWord.value, sessionWord == userWord, session.sessionId);
-        console.log("MemoryJane _questionIntent_ sessionQuestion: " + session.attributes.Question + " userAnswer: " + userAnswer);
+        // Try to add the result to the database of results for later analysis.
+        data.putResult(sessionAnswer, userAnswer, sessionAnswer == userAnswer, session.sessionId);
 
         // Get the next random question from the db. It returns async.
-        data.getNewQuestion(function (question) {
-            data.getResponse(function (session, userAnswer, response) {
-                {
-                    response.ask(response + " . " + question);
-                }
-        });
+        data.getNewQuestion(session, function (question) {
+            data.getResponse(session, userAnswer, function (answerResponse) {
+                response.ask(answerResponse + " . " + question);
+            });
         });
     },
 
@@ -80,7 +77,6 @@ MemoryJane.prototype.intentHandlers = {
     MemoryJaneQuitIntent: function (intent, session, response) {
         // TODO Do we want more than one goodbye? Should this end up in the DB like everything else?
         response.tell("Goodbye");
-
     }
 };
 

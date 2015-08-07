@@ -27,7 +27,7 @@ var data = (function () {
      * The reply is an incomplete sentence. It is assumed that the correct answer will be appended
      * at the end of the reply that is sent back.
      */
-    function getRandomIncorrectReply() {
+    function getRandomIncorrectReply(incorrectReplyCallback) {
         var dynamodb = getDynamoDB();
 
         // Get the number of incorrect replies by doing a COUNT scan.
@@ -49,7 +49,7 @@ var data = (function () {
                         var incorrectReply = itemData.Item.Reply.S;
                         console.log("Data _gettingWord_ " + incorrectReply);
 
-                        return incorrectReply;
+                        incorrectReplyCallback(incorrectReply);
                     }
                 });
             }
@@ -62,7 +62,7 @@ var data = (function () {
      * This is a complete sentence, congratulating the user. It is assumed that the answer will not appear
      * in the congratulations.
      */
-    function getRandomCorrectReply() {
+    function getRandomCorrectReply(correctReplyCallback) {
         var dynamodb = getDynamoDB();
 
         // Get the number of correct replies by doing a COUNT scan.
@@ -84,7 +84,7 @@ var data = (function () {
                         var correctReply = itemData.Item.Reply.S;
                         console.log("Data _gettingCorrectReply_ " + correctReply);
 
-                        return correctReply;
+                        correctReplyCallback(correctReply);
                     }
                 });
             }
@@ -94,15 +94,15 @@ var data = (function () {
 
     /**
      * Get a random prompt from the DB. Call the callback function when it has been retrieved.
-     * @param database
-     * @param callback
+     * @param promptTag
+     * @param promptCallback
      */
-    function getPrompt(database, callback) {
+    function getRandomPrompt(promptTag, promptCallback) {
         //Get a new question and answer from the database
         var dynamodb = getDynamoDB();
 
         // Get the number of questions by doing a COUNT scan.
-        var promptParams = {TableName: "MemoryJane" + database + "Prompts", Select: 'COUNT'};
+        var promptParams = {TableName: "MemoryJane" + promptTag + "Prompts", Select: 'COUNT'};
         dynamodb.scan(promptParams, function (err, data) {
             if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
             else {
@@ -110,7 +110,7 @@ var data = (function () {
                 var number = data.Count;
                 var rand = (Math.floor(Math.random() * number)) + 1;
                 var getPromptParams = {
-                    TableName: "MemoryJane" + database + "Prompts",
+                    TableName: "MemoryJane" + promptTag + "Prompts",
                     Key: {Index: {"N": rand.toString()}}
                 };
 
@@ -118,10 +118,10 @@ var data = (function () {
 
                 // Get the random incorrect reply from the table, returns async.
                 dynamodb.getItem(getPromptParams, function (itemError, itemData) {
-                    if (itemError) console.log("Data _gettingNewQuestion_  ERROR " + itemError); // an error occurred
+                    if (itemError) console.log("Data _gettingRandomPrompt_  ERROR " + itemError); // an error occurred
                     else {
                         var prompt = itemData.Item.Prompt.S;
-                        callback(prompt);
+                        promptCallback(prompt);
                     }
                 });
             }
@@ -143,44 +143,26 @@ var data = (function () {
             dynamodb.scan(countParams, function (err, data) {
                 if (err) console.log("Data _describingTable_  ERROR " + err); // an error occurred
                 else {
-                    // Pick a random incorrect reply from the table.
+                    // Pick a random question from the table.
                     var number = data.Count;
                     var rand = (Math.floor(Math.random() * number)) + 1;
-                    console.log("Table index picked: " + rand);
                     var getQuestionParams = {TableName: "MemoryJaneFlashCards", Key: {Index: {"N": rand.toString()}}};
-
-                    console.log("Data _describingTable_ itemCount: " + number);
 
                     // Get the random incorrect reply from the table, returns async.
                     dynamodb.getItem(getQuestionParams, function (itemError, itemData) {
                         if (itemError) console.log("Data _gettingNewQuestion_  ERROR " + itemError); // an error occurred
                         else {
-                            //Pull prompt data from the table and use it in the logic
-                            var promptFromTable;
-                            if (itemData.Item.Prompt != undefined) {
-                                promptFromTable = itemData.Item.Prompt.S;
-                            }
                             var question = itemData.Item.Question.S;
-                            console.log("Data _gettingQuestion_ : " + question);
-                            console.log("Data _gettingCategory_ : " + promptFromTable);
+                            session.attributes.Answer = itemData.Item.Answer.S;
 
-                            // If Prompt is not defined, or empty, then the Question contains the entire question
-                            if (promptFromTable == undefined || promptFromTable == null) {
-                                //do nothing
-                            }
-                            //Otherwise insert the question into the prompt at the point it says "%1"
-                            else {
-                                //Pull from the prompt database and combine the two
-                                getPrompt(function (promptFromTable, prompt) {
-                                    {
-                                        question = prompt.replace('%1', ' ' + itemData.Item.Question.S + ' ');
-                                    }
+                            //Pull prompt data from the table and use it in the logic
+                            if (itemData.Item.Prompt != undefined) {
+                               var  promptFromTable = itemData.Item.Prompt.S;
+                                getRandomPrompt(promptFromTable, function (prompt) {
+                                    var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
+                                    callback(questionWithPrompt);
                                 });
                             }
-
-                            //Pulls answer data from the table and stores it in the session attributes
-                            session.attributes.Answer = itemData.Item.Answer.S;
-                            console.log("Data _gettingNewQuestion_ : " + question + " Answer: " + session.attributes.Answer);
 
                             callback(question);
                         }
@@ -197,21 +179,21 @@ var data = (function () {
          * @param callback
          */
         getResponse: function (session, userAnswer, callback) {
-            console.log("Data _gettingAnswer: ");
             var correctAnswer = session.attributes.Answer;
+            console.log("Data _getResponse correctAnswer: "+correctAnswer+" userAnswer: "+userAnswer);
 
             //Check if the user gave the correct answer
             if (userAnswer == correctAnswer) {
                 //Pull a correct response from the database
                 console.log("Data _gettingCorrectResponse: ");
-                data.getRandomCorrectReply(function (correctReply) {
+                getRandomCorrectReply(function (correctReply) {
                     callback(correctReply);
                 });
             }
             else {
                 //Pull an incorrect response from the database
                 console.log("Data _gettingIncorrectResponse: ");
-                data.getRandomIncorrectReply(function (incorrectReply) {
+                getRandomIncorrectReply(function (incorrectReply) {
                     callback(incorrectReply + correctAnswer);
                 });
             }
