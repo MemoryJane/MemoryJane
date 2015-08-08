@@ -38,7 +38,7 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
         //Tell Alexa to ask the user the question
-        response.ask(question);
+        response.ask(question, question);
     });
 };
 
@@ -61,7 +61,7 @@ MemoryJane.prototype.intentHandlers = {
         // Get the next random question from the db. It returns async.
         data.getResponse(session, userAnswer, function (answerResponse) {
             data.getNewQuestion(session, function (question) {
-                response.ask(answerResponse + " . " + question);
+                response.ask(answerResponse + " . " + question, question);
             });
         });
     },

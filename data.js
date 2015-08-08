@@ -35,8 +35,8 @@ var data = (function () {
     function getRandomItemFromTable(tableName, randomItemCallback) {
         var dynamodb = getDynamoDB();
 
-        var incorrectReplyParams = {TableName: tableName, Select: 'COUNT'};
-        dynamodb.scan(incorrectReplyParams, function (tableReplyErr, tableReplyData) {
+        var tableParams = {TableName: tableName, Select: 'COUNT'};
+        dynamodb.scan(tableParams, function (tableReplyErr, tableReplyData) {
             if (tableReplyErr) {
                 console.log("Data _getRandomItemFromTable  ERROR " + tableReplyErr);
             } else {
@@ -53,6 +53,41 @@ var data = (function () {
                         console.log("Data _getRandomItemFromTable  ERROR " + getTableItemError);
                     } else {
                         randomItemCallback(getTableItemData.Item);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Get all of the items from a table.
+     * This is a private function.
+     * @param tableName
+     * @param allItemsCallback
+     */
+    function getAllItemsFromTable(tableName, allItemsCallback) {
+        var dynamodb = getDynamoDB();
+
+        var tableParams = {TableName: tableName, Select: 'COUNT'};
+        dynamodb.scan(tableParams, function (tableReplyErr, tableReplyData) {
+            if (tableReplyErr) {
+                console.log("Data _getRandomItemFromTable  ERROR " + tableReplyErr);
+            } else {
+                var tableLength = tableReplyData.Count;
+                var tableItemParams = {};
+                for (var i = 0; i < tableLength; i++) {
+                    tableItemParams[i] = {
+                        TableName: tableName,
+                        Key: {Index: {"N": i.toString()}}
+                    };
+                }
+                // TODO get this to get all of the items in the table
+                // Get the random incorrect reply from the table, returns async.
+                dynamodb.getItem(tableItemParams, function (getTableItemError, getTableItemData) {
+                    if (getTableItemError) {
+                        console.log("Data _getRandomItemFromTable  ERROR " + getTableItemError);
+                    } else {
+                        allItemsCallback(getTableItemData.Item);
                     }
                 });
             }
