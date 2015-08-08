@@ -1,5 +1,6 @@
 /**
  * MemoryJane v1.0
+ * Follows the Module pattern.
  * Written by David Williams
  */
 
@@ -8,6 +9,8 @@ var AWS = require("aws-sdk");
 var data = (function () {
     /**
      * Get the database object, either from AWS if it is there, or locally if it is not.
+     * This is a private function.
+     * @returns {AWS.DynamoDB}
      */
     function getDynamoDB () {
         var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
@@ -24,6 +27,9 @@ var data = (function () {
     /**
      * Get a random item from a table.
      * Assumes there is an "Index" in the table.
+     * This is a private function.
+     * @param tableName
+     * @param randomItemCallback
      */
     function getRandomItemFromTable(tableName, randomItemCallback) {
         var dynamodb = getDynamoDB();
@@ -57,6 +63,8 @@ var data = (function () {
      * function when the word has been retrieved.
      * The reply is an incomplete sentence. It is assumed that the correct answer will be appended
      * at the end of the reply that is sent back.
+     * This is a private function.
+     * @param incorrectReplyCallback
      */
     function getRandomIncorrectReply(incorrectReplyCallback) {
         getRandomItemFromTable("MemoryJaneIncorrectReplies", function(incorrectReplyItem) {
@@ -69,6 +77,8 @@ var data = (function () {
      * function when the word has been retrieved.
      * This is a complete sentence, congratulating the user. It is assumed that the answer will not appear
      * in the congratulations.
+     * This is a private function.
+     * @param correctReplyCallback
      */
     function getRandomCorrectReply(correctReplyCallback) {
         getRandomItemFromTable("MemoryJaneCorrectReplies", function(correctReplyItem) {
@@ -78,6 +88,7 @@ var data = (function () {
 
     /**
      * Get a random prompt from the DB. Call the callback function when it has been retrieved.
+     * This is a private function.
      * @param promptTag
      * @param promptCallback
      */
@@ -91,6 +102,7 @@ var data = (function () {
     return {
         /**
          * Get a random question from the DB. Call the callback function when it has been retrieved.
+         * THis is a public function.
          *  @param session
          *  @param callback
          */
@@ -152,7 +164,7 @@ var data = (function () {
             }
 
             //Check if the user gave the correct answer
-            if (userAnswer == correctAnswer) {
+            if (userAnswer.toLowerCase() == correctAnswer.toLowerCase()) {
                 //Pull a correct response from the database
                 getRandomCorrectReply(function (correctReply) {
                     callback(correctReply);
