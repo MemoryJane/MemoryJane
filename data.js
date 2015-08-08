@@ -19,6 +19,7 @@ var data = (function () {
         if (dynamodb.config.credentials == null) {
             dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
             dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
+
             console.log("Data _getDynamoDB using LOCAL db");
         }
         return dynamodb;
