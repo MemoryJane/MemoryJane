@@ -53,6 +53,7 @@ MemoryJane.prototype.intentHandlers = {
     MemoryJaneQuestionIntent: function (intent, session, response) {
         var data = require("./data.js");
         var userAnswer = intent.slots.Answer.value;
+        console.log("USER ANSWER: " + userAnswer);
 
         // Add the result to a database of results for later analysis.
         data.putResult(userAnswer, session);
@@ -66,6 +67,7 @@ MemoryJane.prototype.intentHandlers = {
     },
 
     // Intent handler for if the user wants to quit.
+
     MemoryJaneQuitIntent: function (intent, session, response) {
         // TODO Do we want more than one goodbye? Should this end up in the DB like everything else?
         response.tell("Goodbye");

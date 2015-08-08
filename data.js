@@ -152,7 +152,7 @@ var data = (function () {
             }
 
             //Check if the user gave the correct answer
-            if (userAnswer == correctAnswer) {
+            if (userAnswer.toLowerCase() == correctAnswer.toLowerCase()) {
                 //Pull a correct response from the database
                 getRandomCorrectReply(function (correctReply) {
                     callback(correctReply);
