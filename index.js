@@ -38,6 +38,7 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
         //Tell Alexa to ask the user the question
+        question = "Here's your first question: " + question;
         session.attributes.Question = question;
         response.ask(question, question);
     });

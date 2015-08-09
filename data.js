@@ -181,6 +181,7 @@ var data = (function () {
         putResult: function (userAnswer, session) {
             var correctAnswer = session.attributes.Answer;
             var sessionID = session.sessionId;
+            var userID = session.user.userId;
             var correct = correctAnswer == userAnswer;
             var rightNow = new Date();
             var dateToday = Number(rightNow.getUTCFullYear())
@@ -199,7 +200,8 @@ var data = (function () {
                     WordGiven: {"S": correctAnswer},
                     UserResponse: {"S": userAnswer},
                     Correct: { "BOOL": correct },
-                    SessionID: { "S": sessionID }
+                    SessionID: {"S": sessionID},
+                    UserID: {"S": userID}
                 }
             };
 
