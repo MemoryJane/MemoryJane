@@ -100,11 +100,6 @@ AlexaSkill.prototype.execute = function (event, context) {
             context.fail();
         }
 
-        // Not sure what having undefined sessions attributes does ..
-        if (!event.session.attributes) {
-            event.session.attributes = {};
-        }
-
         // If the session is new, initialize it.
         if (event.session.new) {
             this.eventHandlers.onSessionStarted(event.request, event.session);

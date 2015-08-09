@@ -81,8 +81,17 @@ MemoryJane.prototype.intentHandlers = {
  * @param context
  */
 exports.handler = function (event, context) {
-    // Create an instance of the MemoryJane skill and execute it.
     console.log("MemoryJane _handler creating MemoryJane object");
+
+    // HACK: We store the expected answer for each question in the session, so that when the user comes back
+    // we can test to see if they got the question right. But, when we're running locally, the session comes to
+    // us blank, so we have to put in a hack to fill the answer with a fake answer.
+    if (event.session.attributes == undefined) {
+        event.session.attributes = {};
+        event.session.attributes.Answer = "LOCAL_HACK";
+    }
+
+    // Create an instance of the MemoryJane skill and execute it.
     var memoryJane = new MemoryJane();
     memoryJane.execute(event, context);
     console.log("MemoryJane _handler_ done");

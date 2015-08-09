@@ -156,11 +156,6 @@ var data = (function () {
         getResponse: function (session, userAnswer, callback) {
             var correctAnswer = session.attributes.Answer;
 
-            // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
-            if (correctAnswer == undefined) {
-                correctAnswer = "LOCAL_HACK";
-            }
-
             //Check if the user gave the correct answer
             if (userAnswer.toLowerCase() == correctAnswer.toLowerCase()) {
                 //Pull a correct response from the database
@@ -193,11 +188,6 @@ var data = (function () {
                 +(rightNow.getUTCSeconds()*1000)
                 +(rightNow.getUTCMinutes()*100000)
                 +(rightNow.getUTCHours()*10000000);
-
-            // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
-            if (correctAnswer == undefined) {
-                correctAnswer = "LOCAL_HACK";
-            }
 
             var dynamodb = getDynamoDB();
             var resultParams = { TableName: 'MemoryJaneQueryResults',
