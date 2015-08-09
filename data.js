@@ -4,24 +4,25 @@
  * Written by David Williams
  */
 
-var AWS = require("aws-sdk");
-
 var data = (function () {
+    var AWS = require("aws-sdk");
+    var dynamodb = getDynamoDB(false);
+
     /**
      * Get the database object, either from AWS if it is there, or locally if it is not.
      * This is a private function.
      * @returns {AWS.DynamoDB}
      */
     function getDynamoDB (local) {
-        var dynamodb;
-        if (false) {
-            dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
-            dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
+        var DB;
+        if (local) {
+            DB = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
+            DB.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
         } else {
             // Otherwise try to connect to the remote DB using the config file.
-            dynamodb = new AWS.DynamoDB();
+            DB = new AWS.DynamoDB();
         }
-        return dynamodb;
+        return DB;
     }
 
     /**
@@ -33,7 +34,6 @@ var data = (function () {
      * @param randomTableItemCallback
      */
     function getRandomTableItem(session, tableName, attributeName, randomTableItemCallback) {
-        var dynamodb = getDynamoDB();
         var sessAttr = session.attributes;
 
         // If either the array-of-arrays or the specific array for this table are undefined,
@@ -97,8 +97,6 @@ var data = (function () {
      * @param randomItemArrayCallback
      */
     function getRandomItemArrayFromIndexArray (indexesArray, tableName, indexName, count, randomItemArrayCallback) {
-        var dynamodb = getDynamoDB();
-
         // Pick a random index from the indexesArray.
         var randomIndexOfIndexes =(Math.floor(Math.random() * indexesArray.length));
         var randomIndex = indexesArray[randomIndexOfIndexes];
@@ -138,7 +136,6 @@ var data = (function () {
      * @param randomTableItemCallback
      */
     function getRandomTableItemInBlocks(session, tableName, indexName, randomTableItemCallback) {
-        var dynamodb = getDynamoDB();
         var sessAttr = session.attributes;
         var blockSize = 15;  // The cache size;
 
@@ -223,9 +220,6 @@ var data = (function () {
          *  @param callback
          */
         getNewQuestion: function (session, callback) {
-            //Get a new question and answer from the database
-            var dynamodb = getDynamoDB();
-
             // Get the number of questions by doing a COUNT scan.
             var newQuestionParams = {TableName: "MemoryJaneFlashCards", Select: 'COUNT'};
             dynamodb.scan(newQuestionParams, function (newQuestionErr, newQuestionData) {
@@ -235,7 +229,8 @@ var data = (function () {
                     // Pick a random question from the table.
                     getRandomTableItemInBlocks(session, "MemoryJaneFlashCards", "Index", function(randomQuestionItem) {
                         var question = randomQuestionItem.Question.S;
-                        var answer = randomQuestionItem.Answer.S
+                        var answer = randomQuestionItem.Answer.S;
+                        session.attributes.Answer = answer;
 
                         // If there is a prompt, add it to the question.
                         if (randomQuestionItem.Prompt) {
@@ -243,9 +238,12 @@ var data = (function () {
                             var tableName = "MemoryJane"+promptFromTable+"Prompts";
                             getRandomTableItem(session, tableName, "Prompt", function (prompt) {
                                 var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
+
+                                session.attributes.Question = questionWithPrompt;
                                 callback(questionWithPrompt);
                             });
                         } else {
+                            session.attributes.Question = question;
                             callback(question);
                         }
                     });
@@ -297,7 +295,6 @@ var data = (function () {
                 +(rightNow.getUTCMinutes()*100000)
                 +(rightNow.getUTCHours()*10000000);
 
-            var dynamodb = getDynamoDB();
             var resultParams = { TableName: 'MemoryJaneQueryResults',
                 Item: {
                     Date: { "N": dateToday.toString() },
