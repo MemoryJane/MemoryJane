@@ -14,13 +14,13 @@ var data = (function () {
      */
     function getDynamoDB (local) {
         var dynamodb;
-        if (true) {
+        if (false) {
             dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
             dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
             console.log("Using LOCAL ");
         } else {
             // Otherwise try to connect to the remote DB using the config file.
-            AWS.config.loadFromPath('./config.json');
+            //AWS.config.loadFromPath('./config.json');
             dynamodb = new AWS.DynamoDB();
             console.log("Using AWS ");
         }
@@ -89,14 +89,12 @@ var data = (function () {
 
                 incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
             });
-        }
-        else if (session.attributes.nextIncorrectReplyIndex == 0) {
+        } else if (session.attributes.nextIncorrectReplyIndex == 0) {
             //If you have gone through all of the replies, re-randomize them and reset the countdown
             randomize(session.attributes.incorrectReplies.length, session);
             session.attributes.nextIncorrectReplyIndex = session.attributes.incorrectReplies.length;
             incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
-        }
-        else {
+        } else {
             //If neither of the above conditions are true, return the next item in the countdown
             incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
         }
