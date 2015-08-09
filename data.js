@@ -14,13 +14,12 @@ var data = (function () {
      */
     function getDynamoDB (local) {
         var dynamodb;
-        if (false) {
+        if (true) {
             dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
             dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
             console.log("Using LOCAL ");
         } else {
             // Otherwise try to connect to the remote DB using the config file.
-            //AWS.config.loadFromPath('./config.json');
             dynamodb = new AWS.DynamoDB();
             console.log("Using AWS ");
         }
@@ -28,78 +27,62 @@ var data = (function () {
     }
 
     /**
-     * Get a random item from a table.
-     * Assumes there is an "Index" in the table.
-     * This is a private function.
-     * @param tableName
-     * @param randomItemCallback
-     */
-    function getRandomItemFromTable(tableName, randomItemCallback) {
-        var dynamodb = getDynamoDB();
-
-        var tableParams = {TableName: tableName, Select: 'COUNT'};
-        dynamodb.scan(tableParams, function (tableReplyErr, tableReplyData) {
-            if (tableReplyErr) {
-                console.log("Data _getRandomItemFromTable  ERROR " + tableReplyErr);
-            } else {
-                var tableLength = tableReplyData.Count;
-                var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
-                var tableItemParams = {
-                    TableName: tableName,
-                    Key: {Index: {"N": randomIndex.toString()}}
-                };
-
-                // Get the random incorrect reply from the table, returns async.
-                dynamodb.getItem(tableItemParams, function (getTableItemError, getTableItemData) {
-                    if (getTableItemError) {
-                        console.log("Data _getRandomItemFromTable  ERROR " + getTableItemError);
-                    } else {
-                        randomItemCallback(getTableItemData.Item);
-                    }
-                });
-            }
-        });
-    }
-
-    /**
-     * Get a random incorrect reply from the DB. Call the callback
-     * function when the word has been retrieved.
-     * The reply is an incomplete sentence. It is assumed that the correct answer will be appended
-     * at the end of the reply that is sent back.
-     * This is a private function.
+     * For small tables, we can cache them in the session and use this to get a random item from that table.
      * @param session
-     * @param incorrectReplyCallback
+     * @param tableName
+     * @param attributeName
+     * @param randomTableItemCallback
      */
-    function getRandomIncorrectReply(session, incorrectReplyCallback) {
+    function getRandomTableItem(session, tableName, attributeName, randomTableItemCallback) {
         var dynamodb = getDynamoDB();
 
-        if (session.attributes.incorrectReplies == undefined) {
-            var tableParams = {TableName: "MemoryJaneIncorrectReplies"};
+        // If either the array-of-arrays or the specific array for this table are undefined,
+        // then we need to create them.
+        if (session.attributes.cachedTableItems == undefined || session.attributes.cachedTableItems[tableName] == undefined) {
+            var tableParams = {TableName: tableName, "AttributesToGet": [ attributeName ] };
+            var tableItems = [];
+
+            // Get the list of attributes we care about.
             dynamodb.scan(tableParams, function (tableReplyErr, tableReplyData) {
-                session.attributes.incorrectReplies = [];
-                session.attributes.nextIncorrectReplyIndex = tableReplyData.Count - 1;
-                for (i = 0; i < tableReplyData.Count; i++) {
-                    session.attributes.incorrectReplies[i] = tableReplyData.Items[i].Reply.S.trim();
+                if (tableReplyErr) {
+                    console.log("Data _getRandomTableItem  ERROR "+tableReplyErr);
+                } else {
+                    // Create the table for the index into the items.
+                    if (session.attributes.cachedTableItemsIndexes == undefined) session.attributes.cachedTableItemsIndexes = {};
+                    session.attributes.cachedTableItemsIndexes[tableName] = tableReplyData.Count - 1;
+
+                    // Create the table for the items.
+                    if (session.attributes.cachedTableItems == undefined) session.attributes.cachedTableItems = {};
+                    session.attributes.cachedTableItems[tableName] = [];
+
+                    // Fill the table of items.
+                    for (i = 0; i < tableReplyData.Count; i++) {
+                        tableItems[i] = tableReplyData.Items[i][attributeName].S.trim();
+                        console.log(tableReplyData.Items[i]);
+                    }
+
+                    //Randomize the set of incorrect replies
+                    randomize(tableItems);
+                    session.attributes.cachedTableItems[tableName] = tableItems;
+
+                    var returnValue = session.attributes.cachedTableItems[tableName][session.attributes.cachedTableItemsIndexes[tableName]--];
+                    randomTableItemCallback(returnValue);
                 }
-
-                //Randomize the set of incorrect replies
-                var incorrectRepliesArr = session.attributes.incorrectReplies;
-                randomize(incorrectRepliesArr);
-                session.attributes.incorrectReplies = incorrectRepliesArr;
-
-                incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
             });
-        } else if (session.attributes.nextIncorrectReplyIndex == 0) {
-            //If you have gone through all of the replies, re-randomize them and reset the countdown
-            randomize(session.attributes.incorrectReplies.length, session);
-            session.attributes.nextIncorrectReplyIndex = session.attributes.incorrectReplies.length - 1;
-            incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
         } else {
-            //If neither of the above conditions are true, return the next item in the countdown
-            incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
+            if (session.attributes.cachedTableItemsIndexes[tableName] == 0) {
+                //If you have gone through all of the replies, re-randomize them and reset the countdown
+                var tableToRandomize = session.attributes.cachedTableItems[tableName].slice(0);
+                randomize(tableToRandomize);
+                session.attributes.cachedTableItems[tableName] = tableToRandomize;
+                session.attributes.cachedTableItemsIndexes[tableName] = session.attributes.cachedTableItems[tableName].length-1;
+            }
+
+            // Get the next item, decrement the index.
+            var returnValue = session.attributes.cachedTableItems[tableName][session.attributes.cachedTableItemsIndexes[tableName]--];
+            randomTableItemCallback(returnValue);
         }
     }
-
     /**
      * Randomize a set of data pulled from the table
      * @param arr
@@ -111,34 +94,6 @@ var data = (function () {
             if (randomIndex2 >= randomIndex1) randomIndex2++;
             arr[randomIndex1] = arr.splice(randomIndex2, 1, arr[randomIndex1])[0];
         }
-    }
-
-    /**
-     * Get a random correct reply from the DB. Call the callback
-     * function when the word has been retrieved.
-     * This is a complete sentence, congratulating the user. It is assumed that the answer will not appear
-     * in the congratulations.
-     * This is a private function.
-     * @param session
-     * @param correctReplyCallback
-     */
-    function getRandomCorrectReply(session, correctReplyCallback) {
-        getRandomItemFromTable("MemoryJaneCorrectReplies", function(correctReplyItem) {
-            correctReplyCallback(correctReplyItem.Reply.S);
-        });
-    }
-
-    /**
-     * Get a random prompt from the DB. Call the callback function when it has been retrieved.
-     * This is a private function.
-     * @param promptTag
-     * @param promptCallback
-     */
-    function getRandomPrompt(promptTag, promptCallback) {
-        var tableName = "MemoryJane" + promptTag + "Prompts";
-        getRandomItemFromTable(tableName, function(promptItem) {
-            promptCallback(promptItem.Prompt.S);
-        });
     }
 
     return {
@@ -177,7 +132,8 @@ var data = (function () {
                             //Pull prompt data from the table and use it in the logic
                             if (getQuestionItemData.Item.Prompt != undefined) {
                                 var promptFromTable = getQuestionItemData.Item.Prompt.S;
-                                getRandomPrompt(promptFromTable, function (prompt) {
+                                var tableName = "MemoryJane"+promptFromTable+"Prompts";
+                                getRandomTableItem(session, tableName, "Prompt", function (prompt) {
                                     var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
                                     callback(questionWithPrompt);
                                 });
@@ -208,13 +164,13 @@ var data = (function () {
             //Check if the user gave the correct answer
             if (userAnswer.toLowerCase() == correctAnswer.toLowerCase()) {
                 //Pull a correct response from the database
-                getRandomCorrectReply(session, function (correctReply) {
+                getRandomTableItem(session, "MemoryJaneCorrectReplies", "Reply", function (correctReply) {
                     callback(correctReply);
                 });
             }
             else {
                 //Pull an incorrect response from the database
-                getRandomIncorrectReply(session, function (incorrectReply) {
+                getRandomTableItem(session, "MemoryJaneIncorrectReplies", "Reply", function (incorrectReply) {
                     callback(incorrectReply.replace('%1', ' ' + correctAnswer + ' '));
                 });
             }
