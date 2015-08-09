@@ -25,7 +25,8 @@ var data = (function () {
     }
 
     /**
-     * For small tables, we can cache them in the session and use this to get a random item from that table.
+     * For small tables with a single string stored in an attribute, we can cache them in the session and
+     * use this to get a random item from that table.
      * @param session
      * @param tableName
      * @param attributeName
@@ -33,10 +34,11 @@ var data = (function () {
      */
     function getRandomTableItem(session, tableName, attributeName, randomTableItemCallback) {
         var dynamodb = getDynamoDB();
+        var sessAttr = session.attributes;
 
         // If either the array-of-arrays or the specific array for this table are undefined,
         // then we need to create them.
-        if (!session.attributes.cachedTableItems || !session.attributes.cachedTableItems[tableName]) {
+        if (!sessAttr.cachedTableItems || !sessAttr.cachedTableItems[tableName]) {
             var tableParams = {TableName: tableName, "AttributesToGet": [ attributeName ] };
             var tableItems = [];
 
@@ -46,12 +48,12 @@ var data = (function () {
                     console.log("Data _getRandomTableItem  ERROR "+tableReplyErr);
                 } else {
                     // Create the table for the index into the items.
-                    if (!session.attributes.cachedTableItemsIndexes) session.attributes.cachedTableItemsIndexes = {};
-                    session.attributes.cachedTableItemsIndexes[tableName] = tableReplyData.Count - 1;
+                    if (!sessAttr.cachedTableItemsIndexes) sessAttr.cachedTableItemsIndexes = {};
+                    sessAttr.cachedTableItemsIndexes[tableName] = tableReplyData.Count - 1;
 
                     // Create the table for the items.
-                    if (session.attributes.cachedTableItems == undefined) session.attributes.cachedTableItems = {};
-                    session.attributes.cachedTableItems[tableName] = [];
+                    if (sessAttr.cachedTableItems == undefined) sessAttr.cachedTableItems = {};
+                    sessAttr.cachedTableItems[tableName] = [];
 
                     // Fill the table of items.
                     for (i = 0; i < tableReplyData.Count; i++) {
@@ -60,29 +62,144 @@ var data = (function () {
 
                     //Randomize the set of incorrect replies
                     randomize(tableItems);
-                    session.attributes.cachedTableItems[tableName] = tableItems;
+                    sessAttr.cachedTableItems[tableName] = tableItems;
 
-                    var returnValue = session.attributes.cachedTableItems[tableName][session.attributes.cachedTableItemsIndexes[tableName]--];
+                    var returnIndex = sessAttr.cachedTableItemsIndexes[tableName]--;
+                    var returnValue = sessAttr.cachedTableItems[tableName][returnIndex];
                     randomTableItemCallback(returnValue);
                 }
             });
         } else {
-            if (session.attributes.cachedTableItemsIndexes[tableName] == 0) {
-                //If you have gone through all of the replies, re-randomize them and reset the countdown
-                var tableToRandomize = session.attributes.cachedTableItems[tableName].slice(0);
+            // If the index is at the end of the list, randomize the list again and reset the counter.
+            if (sessAttr.cachedTableItemsIndexes[tableName] < 0) {
+                // Copy the array and randomize the copy.
+                var tableToRandomize = sessAttr.cachedTableItems[tableName].slice(0);
                 randomize(tableToRandomize);
-                session.attributes.cachedTableItems[tableName] = tableToRandomize;
-                session.attributes.cachedTableItemsIndexes[tableName] = session.attributes.cachedTableItems[tableName].length-1;
+
+                sessAttr.cachedTableItems[tableName] = tableToRandomize;
+                sessAttr.cachedTableItemsIndexes[tableName] = sessAttr.cachedTableItems[tableName].length-1;
             }
 
             // Get the next item, decrement the index.
-            var returnValue = session.attributes.cachedTableItems[tableName][session.attributes.cachedTableItemsIndexes[tableName]--];
+            var returnIndex = sessAttr.cachedTableItemsIndexes[tableName]--;
+            var returnValue = sessAttr.cachedTableItems[tableName][returnIndex];
             randomTableItemCallback(returnValue);
         }
     }
 
-    function getRandomTableItemInBlocks() {
+    /**
+     * Recursive function that takes an array of indexes, pulls a set of those indexes at random from the DB table,
+     * returning the array of items and the remaining array of indexes.
+     * @param indexesArray
+     * @param tableName
+     * @param indexName
+     * @param count
+     * @param randomItemArrayCallback
+     */
+    function getRandomItemArrayFromIndexArray (indexesArray, tableName, indexName, count, randomItemArrayCallback) {
+        var dynamodb = getDynamoDB();
 
+        // Pick a random index from the indexesArray.
+        var randomIndexOfIndexes =(Math.floor(Math.random() * indexesArray.length));
+        var randomIndex = indexesArray[randomIndexOfIndexes];
+        var updatedIndexesArray = indexesArray.slice(0);
+        updatedIndexesArray.slice(randomIndexOfIndexes, randomIndexOfIndexes+1);
+
+        var tableParams = { TableName: tableName, Key: { } };
+        tableParams.Key[indexName] = { "N": randomIndex };
+
+        dynamodb.getItem(tableParams, function (tableReplyErr, tableReplyData) {
+            if (tableReplyErr) {
+                console.log("Data _getRandomItemArrayFromIndexArray  ERROR " + tableReplyErr);
+            } else {
+                var randomItem = [tableReplyData.Item];
+
+                // Keep calling this recursively until the count is 1, which means this is the last one.
+                if (count == 1) {
+                    randomItemArrayCallback(randomItem, updatedIndexesArray);
+                } else {
+                    getRandomItemArrayFromIndexArray(updatedIndexesArray, tableName, indexName, count-1, function(returnArray, finalIndexesArray) {
+                        // Combine the returnArray with the one randomItem already found.
+                        var finalReturnArray = returnArray.concat(randomItem);
+                        randomItemArrayCallback(finalReturnArray, finalIndexesArray)
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * For large databases of items, we don't want to store all of the items in the session, just a few of them at
+     * a time. This caches blocks of those items, maintaining three things in the session: the small array of items,
+     * the index to the next item to use, and the array of indexes to refill the small array with when needed.
+     * @param session
+     * @param tableName
+     * @param indexName
+     * @param randomTableItemCallback
+     */
+    function getRandomTableItemInBlocks(session, tableName, indexName, randomTableItemCallback) {
+        var dynamodb = getDynamoDB();
+        var sessAttr = session.attributes;
+        var blockSize = 15;  // The cache size;
+
+        // If the array-of-arrays or the specific array for this table are undefined,
+        // or if the index array has fewer than the blocksize left,
+        // then we start from scratch.
+        if (!sessAttr.cachedTableItems || !sessAttr.cachedTableItems[tableName] || sessAttr.cachedTableItemsRefillIndexes[tableName].length < blockSize) {
+            var tableParams = {TableName: tableName, "AttributesToGet": [indexName]};
+            var tableAllIndexes = [];
+            var tableItems = [];
+
+            // Get the list of all of the indexes.
+            dynamodb.scan(tableParams, function (tableReplyErr, tableReplyData) {
+                if (tableReplyErr) {
+                    console.log("Data _getRandomTableItemInBlocks  ERROR " + tableReplyErr);
+                } else {
+                    // Fill the table of all indexes with all of the table indexes.
+                    for (i = 0; i < tableReplyData.Count; i++) {
+                        tableAllIndexes[i] = tableReplyData.Items[i][indexName].N.trim();
+                    }
+
+                    // Get blockSize number of random items and put them in the table of items.
+                    getRandomItemArrayFromIndexArray(tableAllIndexes, tableName, indexName, blockSize, function (returnItemArray, returnIndexesArray) {
+                        // Create the table of items.
+                        if (!sessAttr.cachedTableItems) sessAttr.cachedTableItems = {};
+                        sessAttr.cachedTableItems[tableName] = returnItemArray;
+
+                        // Create the table for the cached table's item index, start it at the end of the list.
+                        if (!sessAttr.cachedTableItemsIndexes) sessAttr.cachedTableItemsIndexes = {};
+                        sessAttr.cachedTableItemsIndexes[tableName] = blockSize - 1;
+
+                        // Save the remaining refill indexes for next time we run out in the cache.
+                        if (!sessAttr.cachedTableItemsRefillIndexes) sessAttr.cachedTableItemsRefillIndexes = {};
+                        sessAttr.cachedTableItemsRefillIndexes[tableName] = returnIndexesArray;
+
+                        // Return the item at the end of the cache.
+                        var returnIndex = sessAttr.cachedTableItemsIndexes[tableName]--;
+                        var returnValue = sessAttr.cachedTableItems[tableName][returnIndex];
+                        randomTableItemCallback(returnValue);
+                    });
+                }
+            });
+        } else if (sessAttr.cachedTableItemsIndexes[tableName] < 0) {
+            // If the index is at the end of the cache, then we need to get some fresh items from the table.
+            var refillIndexesCopy = sessAttr.cachedTableItemsRefillIndexes[tableName].slice(0);
+            getRandomItemArrayFromIndexArray(refillIndexesCopy, tableName, indexName, blockSize, function (returnItemArray, returnIndexesArray) {
+                sessAttr.cachedTableItemsRefillIndexes[tableName] = returnIndexesArray;
+                sessAttr.cachedTableItems[tableName] = returnItemArray;
+                sessAttr.cachedTableItemsIndexes[tableName] = sessAttr.cachedTableItems[tableName].length-1;
+
+                // Now, return the item at the end of the cache.
+                var returnIndex = sessAttr.cachedTableItemsIndexes[tableName]--;
+                var returnValue = sessAttr.cachedTableItems[tableName][returnIndex];
+                randomTableItemCallback(returnValue);
+            });
+        } else {
+            // Nothing to do, just return the item at the end of the cache.
+            var returnIndex = sessAttr.cachedTableItemsIndexes[tableName]--;
+            var returnValue = sessAttr.cachedTableItems[tableName][returnIndex];
+            randomTableItemCallback(returnValue);
+        }
     }
 
     /**
@@ -116,32 +233,20 @@ var data = (function () {
                     console.log("Data _getNewQuestion  ERROR " + newQuestionErr);
                 } else {
                     // Pick a random question from the table.
-                    var tableLength = newQuestionData.Count;
-                    var randomIndex = (Math.floor(Math.random() * tableLength)) + 1;
-                    var getQuestionParams = {
-                        TableName: "MemoryJaneFlashCards",
-                        Key: {Index: {"N": randomIndex.toString()}}
-                    };
+                    getRandomTableItemInBlocks(session, "MemoryJaneFlashCards", "Index", function(randomQuestionItem) {
+                        var question = randomQuestionItem.Question.S;
+                        var answer = randomQuestionItem.Answer.S
 
-                    // Get the random incorrect reply from the table, returns async.
-                    dynamodb.getItem(getQuestionParams, function (getQuestionItemError, getQuestionItemData) {
-                        if (getQuestionItemError) {
-                            console.log("Data _getNewQuestion ERROR " + getQuestionItemError);
+                        // If there is a prompt, add it to the question.
+                        if (randomQuestionItem.Prompt) {
+                            var promptFromTable = randomQuestionItem.Prompt.S;
+                            var tableName = "MemoryJane"+promptFromTable+"Prompts";
+                            getRandomTableItem(session, tableName, "Prompt", function (prompt) {
+                                var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
+                                callback(questionWithPrompt);
+                            });
                         } else {
-                            var question = getQuestionItemData.Item.Question.S;
-                            session.attributes.Answer = getQuestionItemData.Item.Answer.S;
-
-                            //Pull prompt data from the table and use it in the logic
-                            if (getQuestionItemData.Item.Prompt != undefined) {
-                                var promptFromTable = getQuestionItemData.Item.Prompt.S;
-                                var tableName = "MemoryJane"+promptFromTable+"Prompts";
-                                getRandomTableItem(session, tableName, "Prompt", function (prompt) {
-                                    var questionWithPrompt = prompt.replace('%1', ' ' + question + ' ');
-                                    callback(questionWithPrompt);
-                                });
-                            } else {
-                                callback(question);
-                            }
+                            callback(question);
                         }
                     });
                 }
