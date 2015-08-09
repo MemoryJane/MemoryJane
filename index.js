@@ -92,10 +92,17 @@ MemoryJane.prototype.intentHandlers = {
 exports.handler = function (event, context) {
     console.log("MemoryJane _handler creating MemoryJane object");
 
+    // We don't accept any intents with the launch of the app. So, if the user tries to sneak one in, because
+    // the MemoryJaneQuestionIntent can accept just about anything, we need to switch that request back
+    // to a launch request and ignore the user's intent.
+    if (!event.session.attributes && event.request.type != "LaunchRequest") {
+        event.request.type = "LaunchRequest";
+    }
+
     // HACK: We store the expected answer for each question in the session, so that when the user comes back
     // we can test to see if they got the question right. But, when we're running locally, the session comes to
     // us blank, so we have to put in a hack to fill the answer with a fake answer.
-    if (event.session.attributes == undefined) {
+    if (!event.session.attributes) {
         event.session.attributes = {};
         event.session.attributes.Answer = "LOCAL_HACK_ANSWER";
         event.session.attributes.Question= "LOCAL_HACK_QUESTION";
