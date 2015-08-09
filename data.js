@@ -92,7 +92,7 @@ var data = (function () {
         } else if (session.attributes.nextIncorrectReplyIndex == 0) {
             //If you have gone through all of the replies, re-randomize them and reset the countdown
             randomize(session.attributes.incorrectReplies.length, session);
-            session.attributes.nextIncorrectReplyIndex = session.attributes.incorrectReplies.length;
+            session.attributes.nextIncorrectReplyIndex = session.attributes.incorrectReplies.length - 1;
             incorrectReplyCallback(session.attributes.incorrectReplies[session.attributes.nextIncorrectReplyIndex--]);
         } else {
             //If neither of the above conditions are true, return the next item in the countdown
