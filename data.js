@@ -229,10 +229,14 @@ var data = (function () {
             var correctAnswer = session.attributes.Answer;
             var sessionID = session.sessionId;
             var correct = correctAnswer == userAnswer;
-            var todaysDate = Date().split(' ').splice(2,2).join("");
-            var timeNow = Date().split(' ')[4].replace(/[:/]+/g, "");
-
-            console.log(todaysDate+"  "+timeNow);
+            var rightNow = new Date();
+            var dateToday = Number(rightNow.getUTCFullYear())
+                +((rightNow.getUTCMonth()+1)*10000)
+                +((rightNow.getUTCDate()+1)*1000000);
+            var timeNow = Number(rightNow.getUTCMilliseconds())
+                +(rightNow.getUTCSeconds()*1000)
+                +(rightNow.getUTCMinutes()*100000)
+                +(rightNow.getUTCHours()*10000000);
 
             // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
             if (correctAnswer == undefined) {
@@ -242,8 +246,8 @@ var data = (function () {
             var dynamodb = getDynamoDB();
             var resultParams = { TableName: 'MemoryJaneQueryResults',
                 Item: {
-                    Date: { "N": todaysDate },
-                    Time: { "N": timeNow },
+                    Date: { "N": dateToday.toString() },
+                    Time: { "N": timeNow.toString() },
                     WordGiven: {"S": correctAnswer},
                     UserResponse: {"S": userAnswer},
                     Correct: { "BOOL": correct },
