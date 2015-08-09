@@ -38,6 +38,7 @@ MemoryJane.prototype.eventHandlers.onLaunch = function (launchRequest, session, 
     var data = require("./data.js");
     data.getNewQuestion(session, function (question) {
         //Tell Alexa to ask the user the question
+        session.attributes.Question = question;
         response.ask(question, question);
     });
 };
@@ -61,6 +62,7 @@ MemoryJane.prototype.intentHandlers = {
         // Get the next random question from the db. It returns async.
         data.getResponse(session, userAnswer, function (answerResponse) {
             data.getNewQuestion(session, function (question) {
+                session.attributes.Question = question;
                 response.ask(answerResponse + " . " + question, question);
             });
         });
@@ -71,6 +73,14 @@ MemoryJane.prototype.intentHandlers = {
     MemoryJaneQuitIntent: function (intent, session, response) {
         // TODO Do we want more than one goodbye? Should this end up in the DB like everything else?
         response.tell("Goodbye");
+    },
+
+    MemoryJaneHelpIntent: function (intent, session, response) {
+        response.ask("You asked for help. Upon starting flashcards, the app will begin giving " +
+            "questions for you to answer. Upon answering, flashcards will tell you if you were " +
+            "correct or incorrect. If you would like to exit the app, say quit. " +
+            "Contact us at info at memory jane dot com, we would love to hear from you. " +
+            "You can also check us out on Facebook. New back to your question: " + session.attributes.Question);
     }
 };
 

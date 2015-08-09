@@ -14,7 +14,7 @@ var data = (function () {
      */
     function getDynamoDB (local) {
         var dynamodb;
-        if (true) {
+        if (false) {
             dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
             dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
             console.log("Using LOCAL ");
