@@ -86,7 +86,6 @@ MemoryJane.prototype.intentHandlers = {
 
 /**
  * This is what gets called by Lambda with each Alexa interaction.
- *
  * @param event
  * @param context
  */
@@ -98,7 +97,8 @@ exports.handler = function (event, context) {
     // us blank, so we have to put in a hack to fill the answer with a fake answer.
     if (event.session.attributes == undefined) {
         event.session.attributes = {};
-        event.session.attributes.Answer = "LOCAL_HACK";
+        event.session.attributes.Answer = "LOCAL_HACK_ANSWER";
+        event.session.attributes.Question= "LOCAL_HACK_QUESTION";
     }
 
     // Create an instance of the MemoryJane skill and execute it.

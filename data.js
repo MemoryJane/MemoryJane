@@ -17,11 +17,9 @@ var data = (function () {
         if (false) {
             dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
             dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
-            console.log("Using LOCAL ");
         } else {
             // Otherwise try to connect to the remote DB using the config file.
             dynamodb = new AWS.DynamoDB();
-            console.log("Using AWS ");
         }
         return dynamodb;
     }
@@ -38,7 +36,7 @@ var data = (function () {
 
         // If either the array-of-arrays or the specific array for this table are undefined,
         // then we need to create them.
-        if (session.attributes.cachedTableItems == undefined || session.attributes.cachedTableItems[tableName] == undefined) {
+        if (!session.attributes.cachedTableItems || !session.attributes.cachedTableItems[tableName]) {
             var tableParams = {TableName: tableName, "AttributesToGet": [ attributeName ] };
             var tableItems = [];
 
@@ -48,7 +46,7 @@ var data = (function () {
                     console.log("Data _getRandomTableItem  ERROR "+tableReplyErr);
                 } else {
                     // Create the table for the index into the items.
-                    if (session.attributes.cachedTableItemsIndexes == undefined) session.attributes.cachedTableItemsIndexes = {};
+                    if (!session.attributes.cachedTableItemsIndexes) session.attributes.cachedTableItemsIndexes = {};
                     session.attributes.cachedTableItemsIndexes[tableName] = tableReplyData.Count - 1;
 
                     // Create the table for the items.
@@ -58,7 +56,6 @@ var data = (function () {
                     // Fill the table of items.
                     for (i = 0; i < tableReplyData.Count; i++) {
                         tableItems[i] = tableReplyData.Items[i][attributeName].S.trim();
-                        console.log(tableReplyData.Items[i]);
                     }
 
                     //Randomize the set of incorrect replies
@@ -83,16 +80,21 @@ var data = (function () {
             randomTableItemCallback(returnValue);
         }
     }
+
+    function getRandomTableItemInBlocks() {
+
+    }
+
     /**
      * Randomize a set of data pulled from the table
-     * @param arr
+     * @param array
      */
-    function randomize(arr) {
-        for (v = 0; v < (arr.length / 4); v++) {
-            var randomIndex1 = (Math.floor(Math.random() * arr.length));
-            var randomIndex2 = (Math.floor(Math.random() * (arr.length - 1)));
+    function randomize(array) {
+        for (v = 0; v < (array.length / 4); v++) {
+            var randomIndex1 = (Math.floor(Math.random() * array.length));
+            var randomIndex2 = (Math.floor(Math.random() * (array.length - 1)));
             if (randomIndex2 >= randomIndex1) randomIndex2++;
-            arr[randomIndex1] = arr.splice(randomIndex2, 1, arr[randomIndex1])[0];
+            array[randomIndex1] = array.splice(randomIndex2, 1, array[randomIndex1])[0];
         }
     }
 
