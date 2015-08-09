@@ -12,15 +12,17 @@ var data = (function () {
      * This is a private function.
      * @returns {AWS.DynamoDB}
      */
-    function getDynamoDB () {
-        var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-
-        // If there are no credentials, then assume we are running locally.
-        if (dynamodb.config.credentials == null) {
-            dynamodb = new AWS.DynamoDB({ endpoint: new AWS.Endpoint('http://localhost:8000') });
-            dynamodb.config.update({ accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1" });
-
-            console.log("Data _getDynamoDB using LOCAL db");
+    function getDynamoDB (local) {
+        var dynamodb;
+        if (true) {
+            dynamodb = new AWS.DynamoDB({endpoint: new AWS.Endpoint('http://localhost:8000')});
+            dynamodb.config.update({accessKeyId: "myKeyId", secretAccessKey: "secretKey", region: "us-east-1"});
+            console.log("Using LOCAL ");
+        } else {
+            // Otherwise try to connect to the remote DB using the config file.
+            AWS.config.loadFromPath('./config.json');
+            dynamodb = new AWS.DynamoDB();
+            console.log("Using AWS ");
         }
         return dynamodb;
     }
@@ -229,6 +231,10 @@ var data = (function () {
             var correctAnswer = session.attributes.Answer;
             var sessionID = session.sessionId;
             var correct = correctAnswer == userAnswer;
+            var todaysDate = Date().split(' ').splice(2,2).join("");
+            var timeNow = Date().split(' ')[4].replace(/[:/]+/g, "");
+
+            console.log(todaysDate+"  "+timeNow);
 
             // HACK: If the correctAnswer is undefined, then we're running locally. Give it an obviously LOCAL value.
             if (correctAnswer == undefined) {
@@ -236,9 +242,10 @@ var data = (function () {
             }
 
             var dynamodb = getDynamoDB();
-            var resultParams = { TableName: 'MemoryJaneResults',
+            var resultParams = { TableName: 'MemoryJaneQueryResults',
                 Item: {
-                    Timestamp: { "N": Date.now().toString() },
+                    Date: { "N": todaysDate },
+                    Time: { "N": timeNow },
                     WordGiven: {"S": correctAnswer},
                     UserResponse: {"S": userAnswer},
                     Correct: { "BOOL": correct },
